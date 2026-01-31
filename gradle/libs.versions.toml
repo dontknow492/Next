@@ -1,0 +1,105 @@
+[versions]
+androidx-lifecycle = "2.9.6"
+composeHotReload = "1.0.0"
+composeMultiplatform = "1.10.0"
+junit = "4.13.2"
+kotlin = "2.3.0"
+kotlinx-coroutines = "1.10.2"
+material3 = "1.10.0-alpha05"
+onnxruntime = "1.23.2"
+common_csv = "1.10.0"
+filekit = "0.12.0"
+coil3 = "3.3.0"
+compose = "1.7.0"
+buildKonfig = "0.17.1"
+reordable = "3.0.0"
+kotlinx-serialization-json = "1.9.0"
+serialization = "2.3.0"
+koin-bom = "4.1.1"  # Stable version
+metadata-extractor = "2.19.0"
+common-imaging = "1.0.0-alpha6"
+kermit = "2.0.8"
+ktorVersion = "3.4.0"
+djl = "0.36.0"
+
+
+[libraries]
+kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
+kotlin-testJunit = { module = "org.jetbrains.kotlin:kotlin-test-junit", version.ref = "kotlin" }
+junit = { module = "junit:junit", version.ref = "junit" }
+androidx-lifecycle-viewmodelCompose = { module = "org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "androidx-lifecycle" }
+androidx-lifecycle-runtimeCompose = { module = "org.jetbrains.androidx.lifecycle:lifecycle-runtime-compose", version.ref = "androidx-lifecycle" }
+compose-runtime = { module = "org.jetbrains.compose.runtime:runtime", version.ref = "composeMultiplatform" }
+compose-foundation = { module = "org.jetbrains.compose.foundation:foundation", version.ref = "composeMultiplatform" }
+compose-material3 = { module = "org.jetbrains.compose.material3:material3", version.ref = "material3" }
+compose-ui = { module = "org.jetbrains.compose.ui:ui", version.ref = "composeMultiplatform" }
+compose-components-resources = { module = "org.jetbrains.compose.components:components-resources", version.ref = "composeMultiplatform" }
+compose-uiToolingPreview = { module = "org.jetbrains.compose.ui:ui-tooling-preview", version.ref = "composeMultiplatform" }
+kotlinx-coroutinesSwing = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-swing", version.ref = "kotlinx-coroutines" }
+#androidx-material-icons-core = { module = "androidx.compose.material:material-icons-core" }
+
+#ktor
+ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktorVersion"}
+ktor-client-cio = { module = "io.ktor:ktor-client-cio", version.ref = "ktorVersion"}
+
+# Use the official compose plugin group
+jetbrains-compose-material = { module = "org.jetbrains.compose.material:material", version.ref = "compose" }
+jetbrains-compose-icons-extended = { module = "org.jetbrains.compose.components:components-resources", version.ref = "compose" }
+# OR the specific icons' library:
+jetbrains-compose-icons = { module = "org.jetbrains.compose.material:material-icons-extended", version.ref = "compose" }
+
+
+onnxruntime = { module = "com.microsoft.onnxruntime:onnxruntime", version.ref = "onnxruntime" }
+common-csv = { module = "org.apache.commons:commons-csv", version.ref = "common_csv"}
+
+# FileKit
+filekit-core = { group = "io.github.vinceglb", name = "filekit-core", version.ref = "filekit" }
+filekit-dialogs = { group = "io.github.vinceglb", name = "filekit-dialogs", version.ref = "filekit" }
+filekit-dialogs-compose = { group = "io.github.vinceglb", name = "filekit-dialogs-compose", version.ref = "filekit" }
+filekit-coil = { group = "io.github.vinceglb", name = "filekit-coil", version.ref = "filekit" }
+
+#coil
+coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil3" }
+coil-network-okhttp = { module = "io.coil-kt.coil3:coil-network-okhttp", version.ref = "coil3" }
+
+#buildkonfig
+buildKonfig = { module = "com.codingfeline.buildkonfig:com.codingfeline.buildkonfig.gradle.plugin", version.ref = "buildKonfig" }
+
+#reordable list
+reordable-item = { module = "sh.calvin.reorderable:reorderable", version.ref = "reordable"}
+
+#
+kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization-json"}
+
+#koin-bom
+koin-bom = { module = "io.insert-koin:koin-bom", version.ref = "koin-bom" }
+koin-core = { module = "io.insert-koin:koin-core" }
+koin-android = { module = "io.insert-koin:koin-android" }
+koin-androidx-compose = { module = "io.insert-koin:koin-androidx-compose" }
+koin-compose = { module = "io.insert-koin:koin-compose" }
+koin-compose-viewmodel = { module = "io.insert-koin:koin-compose-viewmodel" }
+koin-compose-viewmodel-navigation = { module = "io.insert-koin:koin-compose-viewmodel-navigation"}
+koin-ktor = { module = "io.insert-koin:koin-ktor" }
+koin-test = { module = "io.insert-koin:koin-test" }
+
+
+#metadata
+metadata-extractor = { module = "com.drewnoakes:metadata-extractor", version.ref = "metadata-extractor"}
+common-imaging = { module = "org.apache.commons:commons-imaging", version.ref = "common-imaging"}
+
+#logger
+kermit = { module = "co.touchlab:kermit", version.ref = "kermit"}
+
+#djl
+djl-bom = { module = "ai.djl:bom", version.ref = "djl"}
+djl-api = { module = "ai.djl:api"}
+djl-onnxruntime-engine = { module = "ai.djl.onnxruntime:onnxruntime-engine"}
+#djl-modality-cv = { module = "ai.djl.modality:cv"}
+
+[plugins]
+buildKonfig = { id = "com.codingfeline.buildkonfig", version.ref = "buildKonfig" }
+composeHotReload = { id = "org.jetbrains.compose.hot-reload", version.ref = "composeHotReload" }
+composeMultiplatform = { id = "org.jetbrains.compose", version.ref = "composeMultiplatform" }
+composeCompiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
+serialization = {  id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "serialization" }
