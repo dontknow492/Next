@@ -19,6 +19,7 @@ import com.ghost.tagger.data.models.DownloadStatus
 import com.ghost.tagger.data.models.ImageTag
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -44,25 +45,65 @@ class SmilingWolfTagger(
     private var predictor: Predictor<Image, List<ImageTag>>? = null
 
     override val isDownloaded: Boolean
-        get() = modelFile.exists() && tagsFile.exists()
+        get() = modelFile.exists() && modelFile.length() > 0 &&
+                tagsFile.exists() && tagsFile.length() > 0
 
     override fun download(): Flow<DownloadStatus> = flow {
-        // 1. Download Model
-        if (!modelFile.exists()) {
-             KtorDownloadManager.download(
-                 "$repoUrl/resolve/main/model.onnx",
-                 modelFile
-             ).collect { emit(it) }
+        Logger.d("Downloading Model: ${id}")
+
+        emitAll(verifyOrDownload(
+            url = "$repoUrl/resolve/main/model.onnx",
+            targetFile = modelFile,
+            itemName = "Model"
+        ))
+
+        // 2. Verify and Download CSV
+        emitAll(verifyOrDownload(
+            url = "$repoUrl/resolve/main/selected_tags.csv",
+            targetFile = tagsFile,
+            itemName = "Tags"
+        ))
+
+    }
+
+    /**
+     * Helper logic:
+     * 1. Check Remote Size.
+     * 2. If Local Size matches Remote Size, skip download.
+     * 3. Else, download.
+     */
+    private suspend fun verifyOrDownload(
+        url: String,
+        targetFile: File,
+        itemName: String
+    ): Flow<DownloadStatus> = flow {
+
+        // Step A: Get Expected Size
+        val remoteSize = KtorDownloadManager.getRemoteFileSize(url)
+
+        // Step B: Compare with Local File
+        if (targetFile.exists() && remoteSize > 0 && targetFile.length() == remoteSize) {
+            Logger.i { "$itemName already exists and matches remote size ($remoteSize bytes). Skipping." }
+            emit(
+                DownloadStatus(
+                    progress = 1.0f,
+                    progressPercent = 100,
+                    speed = "Checked",
+                    eta = "Ready",
+                    downloadedText = "Verified", // Indicate it was verified, not just downloaded
+                    totalBytes = remoteSize,
+                    downloadedBytes = remoteSize
+                )
+            )
+            return@flow
         }
 
-        // 2. Download CSV
-        if (!tagsFile.exists()) {
-            KtorDownloadManager.download(
-                "$repoUrl/resolve/main/selected_tags.csv",
-                tagsFile
-            ).collect {
-                emit(it.copy(downloadedText = "Fetching tags..."))
-            }
+        // Step C: If we are here, file is missing, corrupt, or wrong size. Download it.
+        Logger.i { "$itemName missing or size mismatch (Local: ${targetFile.length()} vs Remote: $remoteSize). Downloading..." }
+
+        KtorDownloadManager.download(url, targetFile).collect { status ->
+            // Pass through the status, maybe prefixing the status text with item name if you want
+            emit(status)
         }
     }
 

@@ -3,24 +3,29 @@ package com.ghost.tagger.core
 import co.touchlab.kermit.Logger
 import com.ghost.tagger.core.onnx.SmilingWolfTagger
 import com.ghost.tagger.core.onnx.`interface`.TaggerModel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.firstOrNull
 import java.io.File
 
 object ModelManager {
-    // 1. Internal storage for the list
-    private var _taggerModels: List<TaggerModel> = emptyList()
+    // 1. Internal storage for the list using StateFlow
+    private val _taggerModels = MutableStateFlow<List<TaggerModel>>(emptyList())
 
-    // 2. Public accessor (safe to call)
-    val taggerModels: List<TaggerModel>
-        get() = _taggerModels
+    // 2. Public accessor as StateFlow
+    val taggerModels: StateFlow<List<TaggerModel>> = _taggerModels.asStateFlow()
 
     // 3. The Active Model State
     var activeModel: TaggerModel? = null
         private set
 
+    private lateinit var rootDir: File
+
     // 4. The Setup Function (Call this once when App starts!)
     fun init(userModelPath: String?) {
         // Fallback: If user hasn't set a path, use default AppData location
-        val rootDir = if (!userModelPath.isNullOrBlank()) {
+        rootDir = if (!userModelPath.isNullOrBlank()) {
             File(userModelPath)
         } else {
             File(System.getProperty("user.home"), ".ghosttagger/models")
@@ -30,7 +35,7 @@ object ModelManager {
         if (!rootDir.exists()) rootDir.mkdirs()
 
         // 5. Instantiate the models with the correct path
-        _taggerModels = listOf(
+        _taggerModels.value = listOf(
             SmilingWolfTagger(
                 "wd-vit-large-tagger-v3",
                 "https://huggingface.co/SmilingWolf/wd-vit-large-tagger-v3",
@@ -82,7 +87,6 @@ object ModelManager {
                 rootDir
             )
         )
-
     }
 
     suspend fun selectModel(modelId: String) {
@@ -90,7 +94,7 @@ object ModelManager {
         activeModel?.close()
 
         // 2. Find new one
-        val nextModel = taggerModels.find { it.id == modelId } ?: return
+        val nextModel = _taggerModels.value.find { it.id == modelId } ?: return
 
         Logger.d ("Model ${nextModel.id} has been successfully selected $modelId", tag = "ModelManager:selectModel" )
 
@@ -99,6 +103,20 @@ object ModelManager {
             nextModel.load()
             activeModel = nextModel
         }
-//        nextModel.download()
+    }
+
+    fun getDefaultTaggerModelId(): String{
+        val default by lazy { _taggerModels.value.firstOrNull()?.id ?: "wd-vit-large-tagger-v3"}
+        return default
+    }
+
+    fun openInExplorer(modelId: String) {
+        val file = getFilePath(modelId)
+        openFileInExplorer(file)
+    }
+
+    fun getFilePath(modelId: String): File{
+//        return "${rootDir}/$modelId.onnx"
+        return File(rootDir, "$modelId.onnx")
     }
 }

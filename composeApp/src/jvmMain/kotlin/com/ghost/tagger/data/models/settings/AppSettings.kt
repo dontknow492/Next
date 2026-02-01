@@ -1,5 +1,6 @@
 package com.ghost.tagger.data.models.settings
 
+import com.ghost.tagger.core.ModelManager
 import com.ghost.tagger.data.enums.GalleryMode
 import kotlinx.serialization.Serializable
 
@@ -29,7 +30,7 @@ enum class ModelType {
 
 @Serializable
 data class TaggerSettings(
-    val modelPath: String = "",
+    val lastModelId: String = ModelManager.getDefaultTaggerModelId(),
     val confidenceThreshold: Float = 0.5f,
     val maxTags: Int = 10,
     val excludedTags: List<String> = emptyList()
@@ -57,7 +58,7 @@ data class SessionState(
     val lastDirectory: String = System.getProperty("user.home"), // Default to Home
     val lastFocusedImageId: String? = null,
     val activeTab: ModelType = ModelType.TAGGER,
-    val isSidebarVisible: Boolean = true,
+    val isSidebarVisible: Boolean = false,
     val recursiveLoad: Boolean = false,
     val maxRecursionDepth: Int = 2,
     val includeHiddenFiles: Boolean = false,

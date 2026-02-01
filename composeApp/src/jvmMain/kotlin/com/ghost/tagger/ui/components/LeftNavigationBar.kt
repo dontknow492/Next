@@ -58,17 +58,19 @@ fun LeftNavigationBar(
         Spacer(Modifier.weight(1f)) // Push content to bottom
 
         // --- Bottom Area ---
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.padding(bottom = 16.dp)
-        ) {
-            // The Download Widget
-            DownloadSidebarItem(
-                isDownloading = uiState.isDownloading,
-                progress = uiState.downloadStatus?.progress ?: 0f,
-                status = uiState.downloadStatus,
-                activeModelName = uiState.selectedModelId
-            )
-        }
+        DownloadSidebarItem(
+            isDownloading = uiState.isDownloading,
+            progress = uiState.downloadStatus?.progress ?: 0f,
+            status = uiState.downloadStatus,
+            activeModelName = uiState.selectedModelId
+        )
+
+//        Column(
+//            horizontalAlignment = Alignment.CenterHorizontally,
+//            modifier = Modifier.padding(bottom = 16.dp)
+//        ) {
+//            // The Download Widget
+//
+//        }
     }
 }

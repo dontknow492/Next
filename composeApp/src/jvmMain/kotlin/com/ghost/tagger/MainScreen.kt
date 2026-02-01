@@ -40,7 +40,7 @@ fun MainScreen() {
     // 3. koinInject() now works perfectly because it's inside KoinContext
     val settingsViewModel: SettingsViewModel = koinViewModel()
     val currentSettings by settingsViewModel.uiState.collectAsStateWithLifecycle()
-    var isSettingVisible = currentSettings.settings.session.isSidebarVisible
+    val isSettingVisible = currentSettings.settings.session.isSidebarVisible
 
     val galleryViewModel: GalleryViewModel = koinViewModel()
     val galleryUiState by galleryViewModel.uiState.collectAsStateWithLifecycle()
@@ -73,9 +73,6 @@ fun MainScreen() {
                     }
                 )
             }
-
-
-
 
             LeftNavigationBar(
                 isSettingVisible = isSettingVisible,

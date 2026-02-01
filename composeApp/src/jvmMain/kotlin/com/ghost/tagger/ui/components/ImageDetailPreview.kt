@@ -8,6 +8,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.Label
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.rounded.*
@@ -237,7 +238,7 @@ private fun TagsSection(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            SectionLabel("Tags (${tags.size})", Icons.Rounded.Label)
+            SectionLabel("Tags (${tags.size})", Icons.AutoMirrored.Rounded.Label)
 
             // Clear Button
             if (tags.isNotEmpty()) {

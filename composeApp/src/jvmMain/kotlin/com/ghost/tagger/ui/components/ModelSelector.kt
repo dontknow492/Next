@@ -37,6 +37,8 @@ fun ModelSelector(
 
     // Animation for the arrow rotation
     val arrowRotation by animateFloatAsState(targetValue = if (expanded) 180f else 0f)
+    var isDownloadMessageBoxVisible by remember { mutableStateOf(false) }
+    var downloadingModel: TaggerModel? by remember { mutableStateOf(null) }
 
     Column(modifier = Modifier.fillMaxWidth()) {
 
@@ -131,7 +133,10 @@ fun ModelSelector(
                             onModelSelected(model)
                             expanded = false
                         },
-                        onDownload = { onDownloadClick(model) },
+                        onDownload = {
+                            downloadingModel = model
+                            isDownloadMessageBoxVisible = true
+                        },
                         onOpenFolder = { onOpenFolderClick(model) }
                     )
 
@@ -145,7 +150,23 @@ fun ModelSelector(
                 }
             }
         }
+
+        if (isDownloadMessageBoxVisible && downloadingModel != null) {
+            MessageBox(
+                title = "Confirm Download",
+                message = "Downloading model: ${downloadingModel?.displayName}",
+                onConfirm = {
+                    onDownloadClick(downloadingModel!!)
+                    isDownloadMessageBoxVisible = false
+                },
+                onCancel = { downloadingModel = null; isDownloadMessageBoxVisible = false },
+                confirmText = "Download",
+                cancelText = "Cancel",
+                isError = false
+            )
+        }
     }
+
 }
 
 @Composable

@@ -4,6 +4,7 @@ package com.ghost.tagger.data.viewmodels
 import com.ghost.tagger.data.models.settings.ModelType
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import co.touchlab.kermit.Logger
 import com.ghost.tagger.data.repository.SettingsRepository
 import com.ghost.tagger.ui.state.SettingsUiState
 import kotlinx.coroutines.flow.SharingStarted
@@ -46,12 +47,6 @@ class SettingsViewModel(
     // =====================================================
     // TAGGER SETTINGS
     // =====================================================
-
-    fun setTaggerModelPath(path: String) {
-        repository.updateSettings {
-            it.copy(tagger = it.tagger.copy(modelPath = path))
-        }
-    }
 
     fun setTaggerThreshold(value: Float) {
         repository.updateSettings {

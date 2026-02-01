@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.Sort
 import androidx.compose.material.icons.rounded.Abc
 import androidx.compose.material.icons.rounded.ArrowDownward
 import androidx.compose.material.icons.rounded.ArrowUpward
@@ -49,7 +50,7 @@ fun SortMenuButton(
                 containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
             )
         ) {
-            Icon(Icons.Rounded.Sort, contentDescription = "Sort Options")
+            Icon(Icons.AutoMirrored.Rounded.Sort, contentDescription = "Sort Options")
         }
 
         // The Dropdown Menu

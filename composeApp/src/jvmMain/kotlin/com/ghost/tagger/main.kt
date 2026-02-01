@@ -8,9 +8,27 @@ import co.touchlab.kermit.Logger
 import com.ghost.tagger.core.ModelManager
 import com.ghost.tagger.data.repository.SettingsRepository
 import com.ghost.tagger.di.appModule
+import com.ghost.tagger.ui.section.GallerySection
 import com.ghost.tagger.ui.theme.AppTheme
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.cio.CIO
+import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.client.request.get
+import io.ktor.client.statement.HttpResponse
+import io.ktor.client.statement.bodyAsChannel
+import io.ktor.http.isSuccess
+import io.ktor.client.plugins.json.Json
+import io.ktor.client.request.header
+import io.ktor.util.cio.writeChannel
+import io.ktor.utils.io.copyAndClose
+import io.ktor.utils.io.jvm.javaio.copyTo
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.json.Json
 import org.koin.core.context.GlobalContext
 import org.koin.core.context.startKoin
+import java.io.File
+import java.io.FileOutputStream
 import java.lang.Thread.sleep
 
 fun main() {
@@ -44,7 +62,9 @@ fun main() {
         ) {
             AppTheme(darkTheme = true) {
                 MainScreen()
+//                GallerySection()
             }
         }
     }
 }
+

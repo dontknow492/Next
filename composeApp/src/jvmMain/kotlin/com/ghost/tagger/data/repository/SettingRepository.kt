@@ -43,6 +43,8 @@ class SettingsRepository(
         val updated = transform(current)
         // We validate before pushing to the flow
         _settings.value = SettingsValidator.validateAll(updated)
+//        _settings.value = updated
+
     }
 
     fun updateSessionSettings(transform: SessionState){

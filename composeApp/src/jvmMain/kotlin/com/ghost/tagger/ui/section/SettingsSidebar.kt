@@ -125,10 +125,10 @@ fun TaggerSettingsSection(viewModel: SettingsViewModel, settings: TaggerSettings
         // Model Path
         ModelSelector(
             selectedModelId = uiState.selectedModelId,
-            models = ModelManager.taggerModels,
-            onModelSelected = {  },
-            onDownloadClick = {  },
-            onOpenFolderClick = {  }
+            models = uiState.models,
+            onModelSelected = viewModel::selectModel,
+            onDownloadClick = viewModel::downloadModel,
+            onOpenFolderClick = viewModel::openInExplorer,
 //            models = settings.models,
         )
 

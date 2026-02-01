@@ -1,10 +1,12 @@
 package com.ghost.tagger.ui.state
 
+import com.ghost.tagger.core.onnx.`interface`.TaggerModel
 import com.ghost.tagger.data.models.DownloadStatus
 import com.ghost.tagger.data.models.ImageTag
 
 data class TaggerUiState(
     val selectedModelId: String = "wd-vit-large-tagger-v3",
+    val models: List<TaggerModel> = emptyList(),
     val isModelLoaded: Boolean = false,
 
     // Download Status

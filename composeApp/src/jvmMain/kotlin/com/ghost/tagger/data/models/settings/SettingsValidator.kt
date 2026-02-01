@@ -1,5 +1,7 @@
 package com.ghost.tagger.data.models.settings
 
+import com.ghost.tagger.core.ModelManager
+import com.ghost.tagger.ui.components.ModelSelector
 import java.io.File
 
 object SettingsValidator {
@@ -23,7 +25,11 @@ object SettingsValidator {
             // If path isn't empty but file is missing, we keep the path but
             // the UI should handle the warning. We don't clear it automatically
             // so the user can see what they typed.
-            modelPath = settings.modelPath.trim(),
+//            modelPath = settings.modelPath.trim(),
+//            lastModelId = ModelManager.taggerModels.find {
+//                it.id == settings.lastModelId
+//            }?.id ?: ModelManager.taggerModels.first().id,
+
             confidenceThreshold = settings.confidenceThreshold.coerceIn(0.0f, 1.0f),
             maxTags = settings.maxTags.coerceIn(1, 100),
             excludedTags = settings.excludedTags

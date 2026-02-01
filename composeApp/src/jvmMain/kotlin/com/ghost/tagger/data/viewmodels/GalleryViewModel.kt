@@ -3,6 +3,7 @@ package com.ghost.tagger.data.viewmodels
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import co.touchlab.kermit.Logger
+import com.ghost.tagger.core.openFileInExplorer
 import com.ghost.tagger.data.enums.GalleryMode
 import com.ghost.tagger.data.enums.SortBy
 import com.ghost.tagger.data.enums.SortOrder
@@ -244,23 +245,8 @@ class GalleryViewModel(
     }
 
     fun openInExplorer(path: String) {
-        try {
-            val file = java.io.File(path)
-            if (file.exists()) {
-                if (file.isDirectory) {
-                    Runtime.getRuntime().exec(arrayOf("explorer.exe", file.absolutePath))
-                } else {
-                    Runtime.getRuntime().exec(arrayOf("explorer.exe", "/select,${file.absolutePath}"))
-                }
-            } else {
-                file.parentFile?.takeIf { it.exists() }?.let {
-                    Runtime.getRuntime().exec(arrayOf("explorer.exe", it.absolutePath))
-                }
-            }
-            Logger.d(tag = "GalleryViewModel: OpenInExplorer", messageString = "Opening $path")
-        } catch (e: Exception) {
-            Logger.e(e){"Error opening in explorer: ${e.stackTraceToString()}"}
-        }
+        val file = java.io.File(path)
+        openFileInExplorer(file)
     }
 
     fun removeImage(id: String) {

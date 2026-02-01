@@ -36,6 +36,11 @@ kotlin {
 
             //ktor
             implementation(libs.ktor.client.core)
+            implementation(libs.ktor.client.java)
+            implementation(libs.ktor.client.core.java)
+            implementation(libs.ktor.client.content.negotiation)
+            implementation(libs.ktor.client.json)
+            implementation(libs.ktor.client.logging.jvm)
             implementation(libs.ktor.client.cio)
 
 
