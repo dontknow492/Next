@@ -340,7 +340,7 @@ buildkonfig {
 
 compose.desktop {
     application {
-        mainClass = "com.ghost.demo.MainKt"
+        mainClass = "com.ghost.demo.MainKt"  // Note: Uses demo package for historical reasons
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
             packageName = "com.ghost.tagger"
