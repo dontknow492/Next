@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import java.io.File
 
 class SettingsViewModel(
     private val repository: SettingsRepository
@@ -35,6 +36,10 @@ class SettingsViewModel(
     // =====================================================
     // GLOBAL SETTINGS
     // =====================================================
+
+    fun setModelDownloadPath(path: File){
+        repository.updateSettings { it.copy(modelDownloadPath = path.absolutePath) }
+    }
 
     fun setModelType(type: ModelType) {
         repository.updateSettings { it.copy(lastModelType = type) }

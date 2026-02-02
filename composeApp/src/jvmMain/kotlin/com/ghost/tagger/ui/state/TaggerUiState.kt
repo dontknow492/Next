@@ -1,17 +1,16 @@
 package com.ghost.tagger.ui.state
 
-import com.ghost.tagger.core.onnx.`interface`.TaggerModel
-import com.ghost.tagger.data.models.DownloadStatus
+import com.ghost.tagger.core.downloader.DownloadState
+import com.ghost.tagger.core.onnx.`interface`.HuggingFaceTaggerModel
 import com.ghost.tagger.data.models.ImageTag
 
 data class TaggerUiState(
     val selectedModelId: String = "wd-vit-large-tagger-v3",
-    val models: List<TaggerModel> = emptyList(),
+    val models: List<HuggingFaceTaggerModel> = emptyList(),
     val isModelLoaded: Boolean = false,
 
     // Download Status
-    val isDownloading: Boolean = false,
-    val downloadStatus: DownloadStatus? = null,
+    val downloadState: DownloadState = DownloadState.Idle,
 
     // tagger settings
     val confidenceThreshold: Float = 0.5f,

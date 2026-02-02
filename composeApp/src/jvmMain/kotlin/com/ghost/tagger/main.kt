@@ -48,10 +48,7 @@ fun main() {
         // 3. Load the path safely
         // Assuming your repo has a suspend function like getModelPath()
         // or a Flow. Here is the safest way to handle the async load:
-        LaunchedEffect(Unit) {
-            val savedPath = "D:\\Downloads\\IDM Temp" //settingsRepo.getModelDirectory() // Suspend call
-            ModelManager.init(savedPath)
-        }
+        ModelManager.initialize(settingsRepo.settings)
 
         val state = rememberWindowState(size = DpSize(1200.dp, 800.dp))
 

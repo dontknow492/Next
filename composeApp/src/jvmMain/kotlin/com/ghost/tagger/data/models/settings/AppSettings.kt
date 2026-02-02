@@ -3,11 +3,13 @@ package com.ghost.tagger.data.models.settings
 import com.ghost.tagger.core.ModelManager
 import com.ghost.tagger.data.enums.GalleryMode
 import kotlinx.serialization.Serializable
+import java.io.File
 
 
 @Serializable
 data class AppSettings(
     // Global App State
+    val modelDownloadPath: String = File(System.getProperty("user.home"), ".ghosttagger/models").absolutePath,
     val lastModelType: ModelType = ModelType.TAGGER,
     val isDarkMode: Boolean = true,
     val windowWidth: Int = 1280,
@@ -19,7 +21,10 @@ data class AppSettings(
     val system: SystemSettings = SystemSettings(),
 
     // Session State
-    val session: SessionState = SessionState()
+    val session: SessionState = SessionState(),
+
+    // api key
+    val apiKey: String? = null
 
 )
 

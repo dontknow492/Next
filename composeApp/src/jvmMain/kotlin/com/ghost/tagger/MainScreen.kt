@@ -1,34 +1,26 @@
 package com.ghost.tagger
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.LinearOutSlowInEasing
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.ArrowBackIosNew
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.ghost.tagger.data.viewmodels.ApiKeyViewModel
 import com.ghost.tagger.data.viewmodels.GalleryViewModel
 import com.ghost.tagger.data.viewmodels.SettingsViewModel
+import com.ghost.tagger.ui.components.ApiKeyDialog
 import com.ghost.tagger.ui.components.DetailAction
 import com.ghost.tagger.ui.components.ImageDetailPreview
-import com.ghost.tagger.ui.components.LeftNavigationBar
+import com.ghost.tagger.ui.section.LeftNavigationBar
 import com.ghost.tagger.ui.components.VerticalDraggableSplitter
 import com.ghost.tagger.ui.section.GallerySection
 import com.ghost.tagger.ui.section.SettingsSidebar
@@ -44,6 +36,10 @@ fun MainScreen() {
 
     val galleryViewModel: GalleryViewModel = koinViewModel()
     val galleryUiState by galleryViewModel.uiState.collectAsStateWithLifecycle()
+
+    val apiViewModel: ApiKeyViewModel = koinViewModel()
+    val apiDialogState by apiViewModel.state.collectAsStateWithLifecycle()
+
 
     val previewItem = remember(galleryUiState.focusedImageId) {
         if (galleryUiState.focusedImageId == null) null
@@ -78,7 +74,8 @@ fun MainScreen() {
                 isSettingVisible = isSettingVisible,
                 onSettingClick = {
                     settingsViewModel.toggleSideBarVisible()
-                }
+                },
+                onApiClick = apiViewModel::openDialog
             )
             // Main Gallery Area
 //            Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
@@ -115,6 +112,15 @@ fun MainScreen() {
                     }
                 )
             }
+
+            ApiKeyDialog(
+                isOpen = apiDialogState.isOpen,
+                currentKey = apiDialogState.currentKey,
+                isVerifying = apiDialogState.isVerifying,
+                verificationError = apiDialogState.error,
+                onDismiss = apiViewModel::dismissDialog,
+                onVerify = apiViewModel::verifyAndSave
+            )
 
 
 

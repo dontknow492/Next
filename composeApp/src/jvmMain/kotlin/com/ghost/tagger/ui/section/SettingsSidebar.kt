@@ -27,12 +27,14 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import co.touchlab.kermit.Logger
 import com.ghost.tagger.core.ModelManager
 import com.ghost.tagger.data.models.settings.ModelType
 import com.ghost.tagger.data.models.settings.TaggerSettings
 import com.ghost.tagger.data.viewmodels.SettingsViewModel
 import com.ghost.tagger.data.viewmodels.TaggerViewModel
 import com.ghost.tagger.ui.components.ModelSelector
+import com.ghost.tagger.ui.components.rememberDirectoryPicker
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
@@ -41,6 +43,12 @@ fun SettingsSidebar() {
     val viewModel: SettingsViewModel = koinViewModel()
     val uiState by viewModel.uiState.collectAsState()
     val settings = uiState.settings
+
+    val openDir = rememberDirectoryPicker(title = "Open Image Folder") { file ->
+        if (file != null) {
+            viewModel.setModelDownloadPath(file)
+        }
+    }
 
     AnimatedVisibility(
         visible = settings.session.isSidebarVisible,
@@ -70,6 +78,13 @@ fun SettingsSidebar() {
                 text = "Model Configuration",
                 style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                 color = MaterialTheme.colorScheme.onSurface
+            )
+
+            PathSelector(
+                label = "Model Download Folder",
+                path = settings.modelDownloadPath,
+                onFolderClick = {},
+                onClick = openDir,
             )
 
             // 2. Mode Switcher (Tagger vs Descriptor)
@@ -154,7 +169,7 @@ fun TaggerSettingsSection(viewModel: SettingsViewModel, settings: TaggerSettings
         // (Placeholder for a complex Chip Input - kept simple for now)
         OutlinedTextField(
              value = uiState.excludedTags.joinToString(", "),
-             onValueChange = { /* Logic to split by comma and call add/remove */ },
+             onValueChange = {  },
              label = { Text("Excluded Tags") },
              modifier = Modifier.fillMaxWidth(),
              textStyle = MaterialTheme.typography.bodySmall,
@@ -171,7 +186,8 @@ fun DescriptorSettingsSection(viewModel: SettingsViewModel, settings: com.ghost.
         PathSelector(
             label = "Model File (.onnx)",
             path = settings.modelPath,
-            onPick = { viewModel.setDescriptorModelPath(it) }
+            onClick = {},
+            onFolderClick = {}
         )
 
         // Temperature (Creativity)
@@ -327,16 +343,21 @@ fun SwitchSetting(label: String, checked: Boolean, onCheckedChange: (Boolean) ->
 }
 
 @Composable
-fun PathSelector(label: String, path: String, onPick: (String) -> Unit) {
+fun PathSelector(
+    label: String,
+    path: String,
+    onClick: () -> Unit,
+    onFolderClick: () -> Unit
+) {
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Text(label, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Surface(
             shape = RoundedCornerShape(8.dp),
             color = MaterialTheme.colorScheme.surfaceContainerHigh,
-            onClick = { /* Launch File Picker */ }
+            onClick = { onClick() }
         ) {
             Row(
-                modifier = Modifier.fillMaxWidth().padding(12.dp),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 0.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
@@ -346,7 +367,10 @@ fun PathSelector(label: String, path: String, onPick: (String) -> Unit) {
                     modifier = Modifier.weight(1f),
                     maxLines = 1
                 )
-                Icon(Icons.Rounded.FolderOpen, null, modifier = Modifier.size(16.dp))
+                IconButton(onClick = onFolderClick, modifier = Modifier){
+                    Icon(Icons.Rounded.FolderOpen, null, modifier = Modifier.size(16.dp).padding(0.dp))
+                }
+
             }
         }
     }

@@ -4,6 +4,7 @@ package com.ghost.tagger.di
 import com.ghost.tagger.data.models.settings.SettingsManager
 import com.ghost.tagger.data.repository.GalleryRepository
 import com.ghost.tagger.data.repository.SettingsRepository
+import com.ghost.tagger.data.viewmodels.ApiKeyViewModel
 import com.ghost.tagger.data.viewmodels.GalleryViewModel
 import com.ghost.tagger.data.viewmodels.MainViewModel
 import com.ghost.tagger.data.viewmodels.SettingsViewModel
@@ -30,4 +31,5 @@ val appModule = module {
     factory { GalleryViewModel(get(), get()) }
     factory { MainViewModel(get()) }
     factory { TaggerViewModel( get() ) }
+    factory { ApiKeyViewModel(get()) }
 }

@@ -4,9 +4,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import co.touchlab.kermit.Logger
 import com.ghost.tagger.core.ModelManager
-import com.ghost.tagger.core.onnx.`interface`.TaggerModel
+import com.ghost.tagger.core.downloader.DownloadState
+import com.ghost.tagger.core.downloader.FileValidationResult
+import com.ghost.tagger.core.onnx.`interface`.HuggingFaceTaggerModel
+import com.ghost.tagger.data.models.DownloadStatus
 import com.ghost.tagger.data.repository.SettingsRepository
 import com.ghost.tagger.ui.state.TaggerUiState
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -54,42 +58,49 @@ class TaggerViewModel(
 
 
     private suspend fun checkModelStatus() {
-        val model = ModelManager.taggerModels.value.find { it.id == _uiState.value.selectedModelId }
-        _uiState.update { it.copy(isModelLoaded = model?.isDownloaded == true) }
+        val model = ModelManager.taggerModels.value.find { it.repoId == _uiState.value.selectedModelId }
+        val validate = model?.getModelFileValidationResult()
+        if (validate is FileValidationResult.Valid){
+            _uiState.update { it.copy(isModelLoaded = true) }
+        }
+
     }
 
-    fun selectModel(model: TaggerModel) {
+    fun selectModel(model: HuggingFaceTaggerModel) {
         viewModelScope.launch {
             settingsRepo.updateSettings {
-                it.copy(tagger = it.tagger.copy(lastModelId = model.id))
+                it.copy(tagger = it.tagger.copy(lastModelId = model.repoId))
             }
             checkModelStatus()
         }
     }
 
-    fun downloadModel(model: TaggerModel) {
+    fun downloadModel(model: HuggingFaceTaggerModel) {
 //        val model = ModelManager.taggerModels.value.find { it.id == _uiState.value.selectedModelId } ?: return
 
         viewModelScope.launch {
-            _uiState.update { it.copy(isDownloading = true, error = null) }
+            _uiState.update { it.copy(downloadState = DownloadState.Downloading(
+                DownloadStatus(0.5f , 0, "0 B/s", "--", "0 MB / ...", null, 0)
+            ), error = null) }
 
             try {
-                model.download().collect { status ->
-                    _uiState.update { it.copy(downloadStatus = status) }
-
-                    if (status.progress == 1.0f) {
-                        _uiState.update { it.copy(isDownloading = false, isModelLoaded = true) }
-                        ModelManager.selectModel(model.id)
-                    }
+                ModelManager.downloadModel(model).collect { status ->
+                    Logger
+                    _uiState.update { it.copy(downloadState = status) }
                 }
             } catch (e: Exception) {
-                _uiState.update { it.copy(isDownloading = false, error = "Download failed: ${e.message}") }
+                _uiState.update { it.copy(
+                    downloadState = DownloadState.Error("Download failed: ${e.message}"), error = "Download failed: ${e.message}") }
             }
         }
     }
 
+    fun cancelDownload(model: HuggingFaceTaggerModel) {
+        ModelManager.cancelDownload(model)
+    }
+
     fun tagImage(file: File) {
-        val model = ModelManager.taggerModels.value.find { it.id == _uiState.value.selectedModelId } ?: return
+        val model = ModelManager.taggerModels.value.find { it.repoId == _uiState.value.selectedModelId } ?: return
 
         if (!_uiState.value.isModelLoaded) {
             _uiState.update { it.copy(error = "Model not downloaded yet!") }
@@ -100,8 +111,8 @@ class TaggerViewModel(
             _uiState.update { it.copy(isTagging = true, error = null) }
 
             try {
-                if (ModelManager.activeModel?.id != model.id) {
-                    ModelManager.selectModel(model.id)
+                if (ModelManager.activeModel?.repoId != model.repoId) {
+                    ModelManager.selectModel(model.repoId)
                 }
 
                 val resultTags = ModelManager.activeModel?.predict(file) ?: emptyList()
@@ -131,7 +142,10 @@ class TaggerViewModel(
             it.copy(tagger = it.tagger.copy(excludedTags = value))
         }
     }
-    fun openInExplorer(model: TaggerModel) {
-        ModelManager.openInExplorer(model.id)
+    fun openInExplorer(model: HuggingFaceTaggerModel) {
+        viewModelScope.launch {
+            ModelManager.openInExplorer(model.repoId)
+        }
+        
     }
 }

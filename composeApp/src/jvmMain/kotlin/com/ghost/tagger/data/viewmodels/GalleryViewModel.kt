@@ -246,7 +246,10 @@ class GalleryViewModel(
 
     fun openInExplorer(path: String) {
         val file = java.io.File(path)
-        openFileInExplorer(file)
+        viewModelScope.launch {
+            openFileInExplorer(file)
+        }
+
     }
 
     fun removeImage(id: String) {

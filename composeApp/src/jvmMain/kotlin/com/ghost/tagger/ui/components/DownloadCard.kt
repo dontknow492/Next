@@ -22,6 +22,7 @@ import com.ghost.tagger.data.models.DownloadStatus
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.window.PopupProperties
+import com.ghost.tagger.core.downloader.DownloadState
 
 // Import your data classes
 //import com.ghost.tagger.core.DownloadStatus
@@ -122,13 +123,28 @@ fun DownloadStatusCard(
     }
 }
 
+@Composable
+fun IdleDownloadStatusCard(
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit = {}
+){
+    Card(
+        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.onSurfaceVariant),
+        modifier = modifier
+    ){
+        Column(modifier = Modifier.padding(16.dp)) {
+            content.invoke()
+        }
+    }
+}
+
 
 
 @Composable
 fun DownloadSidebarItem(
-    isDownloading: Boolean,
-    progress: Float, // 0.0 to 1.0 (from your status)
-    status: DownloadStatus?,
+    downloadState: DownloadState,
     activeModelName: String
 ) {
     var isPopupOpen by remember { mutableStateOf(false) }
@@ -146,10 +162,10 @@ fun DownloadSidebarItem(
                 )
         ) {
             Box(contentAlignment = Alignment.Center) {
-                if (isDownloading) {
+                if (downloadState is DownloadState.Downloading) {
                     // Show Circular Progress AROUND the icon
                     CircularProgressIndicator(
-                        progress = { progress },
+                        progress = { downloadState.status.progress },
                         modifier = Modifier.size(32.dp),
                         color = MaterialTheme.colorScheme.primary,
                         strokeWidth = 2.dp,
@@ -182,12 +198,55 @@ fun DownloadSidebarItem(
                  onDismissRequest = { isPopupOpen = false },
                  properties = PopupProperties(focusable = true, dismissOnClickOutside = true),
              ){
-                DownloadStatusCard(
-                    modelName = activeModelName,
-                    status = status,
-                    isDownloading = isDownloading,
-                    onCancel = { /* Cancel logic */ }
-                )
+                when (downloadState) {
+                    is DownloadState.Downloading -> {
+                        DownloadStatusCard(
+                            modelName = activeModelName,
+                            status = downloadState.status ,
+                            isDownloading = true,
+                            onCancel = { /* Cancel logic */ }
+                        )
+                    }
+                    is DownloadState.Idle -> {
+                        IdleDownloadStatusCard {
+                            Text(
+                                text = "No downloads",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
+                                maxLines = 4
+                            )
+                        }
+                    }
+                    is DownloadState.Error -> {
+                        IdleDownloadStatusCard {
+                            Text(
+                                text = downloadState.message,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.error,
+                                maxLines = 4,
+                                modifier = Modifier.padding(bottom = 8.dp)
+                            )
+                        }
+                    }
+                    is DownloadState.Success -> {
+                        DownloadStatusCard(
+                            modelName = activeModelName,
+                            status = DownloadStatus(
+                                1.0f,
+                                100,
+                                "0.0MB",
+                                eta = "0.0 sec",
+                                downloadedText = "Download Complete",
+                                totalBytes = 0,
+                                downloadedBytes = 0,
+                            ),
+                            isDownloading = false,
+                            onCancel = { /* Cancel logic */ }
+                        )
+                    }
+
+
+    }
             }
         }
     }

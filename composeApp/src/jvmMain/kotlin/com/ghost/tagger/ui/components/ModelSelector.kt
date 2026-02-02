@@ -20,25 +20,26 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.ghost.tagger.core.onnx.`interface`.TaggerModel
+import com.ghost.tagger.core.downloader.FileValidationResult
+import com.ghost.tagger.core.onnx.`interface`.HuggingFaceTaggerModel
 import java.awt.Desktop
 import java.net.URI
 
 @Composable
 fun ModelSelector(
     selectedModelId: String,
-    models: List<TaggerModel>,
-    onModelSelected: (TaggerModel) -> Unit,
-    onDownloadClick: (TaggerModel) -> Unit,
-    onOpenFolderClick: (TaggerModel) -> Unit
+    models: List<HuggingFaceTaggerModel>,
+    onModelSelected: (HuggingFaceTaggerModel) -> Unit,
+    onDownloadClick: (HuggingFaceTaggerModel) -> Unit,
+    onOpenFolderClick: (HuggingFaceTaggerModel) -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
-    val selectedModel = models.find { it.id == selectedModelId } ?: models.firstOrNull()
+    val selectedModel = models.find { it.repoId == selectedModelId } ?: models.firstOrNull()
 
     // Animation for the arrow rotation
     val arrowRotation by animateFloatAsState(targetValue = if (expanded) 180f else 0f)
     var isDownloadMessageBoxVisible by remember { mutableStateOf(false) }
-    var downloadingModel: TaggerModel? by remember { mutableStateOf(null) }
+    var downloadingModel: HuggingFaceTaggerModel? by remember { mutableStateOf(null) }
 
     Column(modifier = Modifier.fillMaxWidth()) {
 
@@ -128,7 +129,7 @@ fun ModelSelector(
                 models.forEach { model ->
                     ModelOptionItemM3(
                         model = model,
-                        isSelected = model.id == selectedModelId,
+                        isSelected = model.repoId == selectedModelId,
                         onSelect = {
                             onModelSelected(model)
                             expanded = false
@@ -171,12 +172,20 @@ fun ModelSelector(
 
 @Composable
 private fun ModelOptionItemM3(
-    model: TaggerModel,
+    model: HuggingFaceTaggerModel,
     isSelected: Boolean,
     onSelect: () -> Unit,
     onDownload: () -> Unit,
     onOpenFolder: () -> Unit
 ) {
+
+    var validationResult by remember { mutableStateOf<FileValidationResult?>(null) }
+
+    LaunchedEffect(model) {
+        // This runs in a coroutine, so we can call the suspend function
+        validationResult = model.getModelFileValidationResult()
+    }
+
     // Helper for URL
     fun openBrowser(url: String) {
         if (Desktop.isDesktopSupported()) {
@@ -224,7 +233,7 @@ private fun ModelOptionItemM3(
             // Status Badges
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 4.dp)) {
                 // Status Text
-                if (model.isDownloaded) {
+                if (validationResult is FileValidationResult.Valid) {
                     Icon(Icons.Default.CheckCircle, null, modifier = Modifier.size(12.dp), tint = MaterialTheme.colorScheme.tertiary)
                     Spacer(Modifier.width(4.dp))
                     Text("Installed", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.tertiary)
@@ -255,7 +264,7 @@ private fun ModelOptionItemM3(
             Spacer(modifier = Modifier.width(4.dp))
 
             // B. Action Button (Download or Folder)
-            if (model.isDownloaded) {
+            if (validationResult is FileValidationResult.Valid) {
                 FilledTonalIconButton(
                     onClick = onOpenFolder,
                     modifier = Modifier.size(36.dp),
