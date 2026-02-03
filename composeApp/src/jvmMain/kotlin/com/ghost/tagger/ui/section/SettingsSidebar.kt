@@ -27,15 +27,15 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import co.touchlab.kermit.Logger
-import com.ghost.tagger.core.ModelManager
 import com.ghost.tagger.data.models.settings.ModelType
 import com.ghost.tagger.data.models.settings.TaggerSettings
-import com.ghost.tagger.data.viewmodels.SettingsViewModel
-import com.ghost.tagger.data.viewmodels.TaggerViewModel
+import com.ghost.tagger.ui.viewmodels.SettingsViewModel
+import com.ghost.tagger.ui.viewmodels.TaggerViewModel
 import com.ghost.tagger.ui.components.ModelSelector
+import com.ghost.tagger.ui.components.TagsSection
 import com.ghost.tagger.ui.components.rememberDirectoryPicker
 import org.koin.compose.viewmodel.koinViewModel
+import java.io.File
 
 @Composable
 fun SettingsSidebar() {
@@ -167,13 +167,13 @@ fun TaggerSettingsSection(viewModel: SettingsViewModel, settings: TaggerSettings
 
         // Excluded Tags
         // (Placeholder for a complex Chip Input - kept simple for now)
-        OutlinedTextField(
-             value = uiState.excludedTags.joinToString(", "),
-             onValueChange = {  },
-             label = { Text("Excluded Tags") },
-             modifier = Modifier.fillMaxWidth(),
-             textStyle = MaterialTheme.typography.bodySmall,
-             maxLines = 3
+        TagsSection(
+            title = "Excluded Tags",
+            tags = uiState.excludedTags.toList(),
+            onRemove = viewModel::removeExcludedTag,
+            onAdd = viewModel::addExcludedTag,
+            onClear = viewModel::clearExcludedTags,
+            modifier = Modifier.fillMaxWidth()
         )
     }
 }
@@ -183,12 +183,12 @@ fun DescriptorSettingsSection(viewModel: SettingsViewModel, settings: com.ghost.
     Column(verticalArrangement = Arrangement.spacedBy(20.dp)) {
         SectionHeader("Generation Settings", Icons.Rounded.AutoAwesome)
 
-        PathSelector(
-            label = "Model File (.onnx)",
-            path = settings.modelPath,
-            onClick = {},
-            onFolderClick = {}
-        )
+//        PathSelector(
+//            label = "Model File (.onnx)",
+//            path = settings.modelPath,
+//            onClick = {},
+//            onFolderClick = {}
+//        )
 
         // Temperature (Creativity)
         SliderSetting(
@@ -345,7 +345,7 @@ fun SwitchSetting(label: String, checked: Boolean, onCheckedChange: (Boolean) ->
 @Composable
 fun PathSelector(
     label: String,
-    path: String,
+    path: File,
     onClick: () -> Unit,
     onFolderClick: () -> Unit
 ) {
@@ -361,9 +361,9 @@ fun PathSelector(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = path.ifEmpty { "Select .onnx file..." },
+                    text = path.invariantSeparatorsPath.ifEmpty { "Select .onnx file..." },
                     style = MaterialTheme.typography.bodySmall,
-                    color = if (path.isEmpty()) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
+                    color = if (path.name.isEmpty()) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.weight(1f),
                     maxLines = 1
                 )

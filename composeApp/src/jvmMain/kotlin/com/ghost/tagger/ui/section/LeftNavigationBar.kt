@@ -10,21 +10,18 @@ import androidx.compose.material3.NavigationRail
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Api
 import androidx.compose.material.icons.rounded.ArrowBackIosNew
-import androidx.compose.material.icons.rounded.FolderSpecial
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.ghost.tagger.data.viewmodels.TaggerViewModel
-import com.ghost.tagger.ui.components.ApiKeyDialog
+import com.ghost.tagger.data.enums.ThemeMode
+import com.ghost.tagger.ui.viewmodels.TaggerViewModel
 import com.ghost.tagger.ui.components.DownloadSidebarItem
+import com.ghost.tagger.ui.components.ToggleThemeButton
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
@@ -32,7 +29,9 @@ fun LeftNavigationBar(
     modifier: Modifier = Modifier,
     isSettingVisible: Boolean = false,
     onSettingClick: () -> Unit,
-    onApiClick: () -> Unit
+    onApiClick: () -> Unit,
+    themeMode: ThemeMode = ThemeMode.AUTO,
+    onThemeChange: (ThemeMode) -> Unit
 ) {
     val taggerViewModel: TaggerViewModel = koinViewModel()
     val uiState by taggerViewModel.uiState.collectAsStateWithLifecycle()
@@ -69,6 +68,11 @@ fun LeftNavigationBar(
                 modifier = Modifier.rotate(arrowRotation),
             )
         }
+
+        ToggleThemeButton(
+            mode = themeMode,
+            onModeChange = onThemeChange
+        )
 
 
 

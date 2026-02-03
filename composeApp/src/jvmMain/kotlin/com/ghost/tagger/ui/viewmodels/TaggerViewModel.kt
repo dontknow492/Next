@@ -1,13 +1,15 @@
-package com.ghost.tagger.data.viewmodels
+package com.ghost.tagger.ui.viewmodels
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import co.touchlab.kermit.Logger
+import com.ghost.tagger.TagSource
 import com.ghost.tagger.core.ModelManager
 import com.ghost.tagger.core.downloader.DownloadState
 import com.ghost.tagger.core.downloader.FileValidationResult
 import com.ghost.tagger.core.onnx.`interface`.HuggingFaceTaggerModel
 import com.ghost.tagger.data.models.DownloadStatus
+import com.ghost.tagger.data.models.ImageTag
 import com.ghost.tagger.data.repository.SettingsRepository
 import com.ghost.tagger.ui.state.TaggerUiState
 import kotlinx.coroutines.Dispatchers
@@ -117,6 +119,7 @@ class TaggerViewModel(
 
                 val resultTags = ModelManager.activeModel?.predict(file) ?: emptyList()
                 _uiState.update { it.copy(tags = resultTags, isTagging = false) }
+                Logger.i("Tagging result: ${resultTags.size}, ${resultTags.take(3)}")
 
             } catch (e: Exception) {
                 _uiState.update { it.copy(isTagging = false, error = "Tagging failed: ${e.message}") }
@@ -137,11 +140,33 @@ class TaggerViewModel(
         }
     }
 
-    fun setExcludedTags(value: List<String>) {
-        settingsRepo.updateSettings {
-            it.copy(tagger = it.tagger.copy(excludedTags = value))
+    fun addExcludedTag(tag: ImageTag) {
+        settingsRepo.updateSettings { current ->
+            val newList = current.tagger.excludedTags + tag
+            current.copy(tagger = current.tagger.copy(excludedTags = newList))
         }
     }
+    fun addExcludedTag(tag: String) {
+        val tag = ImageTag(name = tag, source = TagSource.MANUAL)
+        settingsRepo.updateSettings { current ->
+            val newList = current.tagger.excludedTags + tag
+            current.copy(tagger = current.tagger.copy(excludedTags = newList))
+        }
+    }
+
+    fun removeExcludedTag(tag: ImageTag) {
+        settingsRepo.updateSettings { current ->
+            val newList = current.tagger.excludedTags - tag
+            current.copy(tagger = current.tagger.copy(excludedTags = newList))
+        }
+    }
+
+    fun clearExcludedTags() {
+        settingsRepo.updateSettings {
+            it.copy(tagger = it.tagger.copy(excludedTags = emptySet()))
+        }
+    }
+
     fun openInExplorer(model: HuggingFaceTaggerModel) {
         viewModelScope.launch {
             ModelManager.openInExplorer(model.repoId)

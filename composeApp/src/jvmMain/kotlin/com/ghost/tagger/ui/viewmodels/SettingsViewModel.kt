@@ -1,12 +1,16 @@
-package com.ghost.tagger.data.viewmodels
+package com.ghost.tagger.ui.viewmodels
 
 
 import com.ghost.tagger.data.models.settings.ModelType
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import co.touchlab.kermit.Logger
+import com.ghost.tagger.data.enums.ThemeMode
+import com.ghost.tagger.data.models.ImageTag
+import com.ghost.tagger.data.models.settings.AppSettings
 import com.ghost.tagger.data.repository.SettingsRepository
 import com.ghost.tagger.ui.state.SettingsUiState
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
@@ -37,8 +41,10 @@ class SettingsViewModel(
     // GLOBAL SETTINGS
     // =====================================================
 
+    fun settingsFlow(): Flow<AppSettings> = repository.settings
+
     fun setModelDownloadPath(path: File){
-        repository.updateSettings { it.copy(modelDownloadPath = path.absolutePath) }
+        repository.updateSettings { it.copy(modelDownloadPath = path) }
     }
 
     fun setModelType(type: ModelType) {
@@ -65,17 +71,23 @@ class SettingsViewModel(
         }
     }
 
-    fun addExcludedTag(tag: String) {
+    fun addExcludedTag(tag: ImageTag) {
         repository.updateSettings { current ->
             val newList = current.tagger.excludedTags + tag
             current.copy(tagger = current.tagger.copy(excludedTags = newList))
         }
     }
 
-    fun removeExcludedTag(tag: String) {
+    fun removeExcludedTag(tag: ImageTag) {
         repository.updateSettings { current ->
             val newList = current.tagger.excludedTags - tag
             current.copy(tagger = current.tagger.copy(excludedTags = newList))
+        }
+    }
+
+    fun clearExcludedTags() {
+        repository.updateSettings {
+            it.copy(tagger = it.tagger.copy(excludedTags = emptySet()))
         }
     }
 
@@ -129,7 +141,7 @@ class SettingsViewModel(
         }
     }
 
-    fun setLastDirectory(path: String) {
+    fun setLastDirectory(path: File) {
         repository.updateSettings {
             it.copy(session = it.session.copy(lastDirectory = path))
         }
@@ -164,6 +176,12 @@ class SettingsViewModel(
     fun toggleSideBarVisible(){
         repository.updateSettings {
             it.copy(session = it.session.copy(isSidebarVisible = it.session.isSidebarVisible.not()))
+        }
+    }
+
+    fun setThemeMode(mode: ThemeMode){
+        repository.updateSettings {
+            it.copy(themeMode = mode)
         }
     }
 }

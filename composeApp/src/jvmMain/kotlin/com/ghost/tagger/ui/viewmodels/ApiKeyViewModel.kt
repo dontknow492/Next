@@ -1,4 +1,4 @@
-package com.ghost.tagger.data.viewmodels
+package com.ghost.tagger.ui.viewmodels
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope

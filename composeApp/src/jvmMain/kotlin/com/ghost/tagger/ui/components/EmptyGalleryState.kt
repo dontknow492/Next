@@ -14,11 +14,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import java.io.File
 
 
 @Composable
 fun EmptyGalleryState(
-    currentDirectory: String?,
+    currentDirectory: File?,
     onPickNewFolder: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -67,7 +68,7 @@ fun EmptyGalleryState(
                 modifier = Modifier.padding(horizontal = 16.dp)
             ) {
                 Text(
-                    text = currentDirectory,
+                    text = currentDirectory.invariantSeparatorsPath,
                     style = MaterialTheme.typography.bodySmall.copy(fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(8.dp),

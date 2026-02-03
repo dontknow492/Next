@@ -1,4 +1,4 @@
-package com.ghost.tagger.data.actions
+package com.ghost.tagger.ui.actions
 
 import com.ghost.tagger.data.enums.GalleryMode
 

@@ -15,7 +15,7 @@ data class TaggerUiState(
     // tagger settings
     val confidenceThreshold: Float = 0.5f,
     val maxTags: Int = 10,
-    val excludedTags: List<String> = emptyList(),
+    val excludedTags: Set<ImageTag> = emptySet(),
 
 
     // Tagging Results

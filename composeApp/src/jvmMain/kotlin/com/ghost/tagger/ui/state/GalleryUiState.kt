@@ -5,9 +5,10 @@ import com.ghost.tagger.data.enums.GalleryMode
 import com.ghost.tagger.data.enums.SortBy
 import com.ghost.tagger.data.enums.SortOrder
 import com.ghost.tagger.data.models.settings.DirectorySettings
+import java.io.File
 
 data class GalleryUiState(
-    val currentDirectory: String? = null,
+    val currentDirectory: File? = null,
     val minThumbnailSizeDp: Float = 240f,
     val images: List<ImageItem> = emptyList(), // All loaded images
     val selectedIds: Set<String> = emptySet(), // Fast lookup for selection

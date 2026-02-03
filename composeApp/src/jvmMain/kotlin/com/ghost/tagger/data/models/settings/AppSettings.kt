@@ -1,7 +1,10 @@
 package com.ghost.tagger.data.models.settings
 
+import com.ghost.tagger.core.FileSerializer
 import com.ghost.tagger.core.ModelManager
 import com.ghost.tagger.data.enums.GalleryMode
+import com.ghost.tagger.data.enums.ThemeMode
+import com.ghost.tagger.data.models.ImageTag
 import kotlinx.serialization.Serializable
 import java.io.File
 
@@ -9,8 +12,10 @@ import java.io.File
 @Serializable
 data class AppSettings(
     // Global App State
-    val modelDownloadPath: String = File(System.getProperty("user.home"), ".ghosttagger/models").absolutePath,
+    @Serializable(with = FileSerializer::class)
+    val modelDownloadPath: File = File(System.getProperty("user.home"), ".ghosttagger/models"),
     val lastModelType: ModelType = ModelType.TAGGER,
+    val themeMode: ThemeMode = ThemeMode.AUTO,
     val isDarkMode: Boolean = true,
     val windowWidth: Int = 1280,
     val windowHeight: Int = 800,
@@ -38,7 +43,7 @@ data class TaggerSettings(
     val lastModelId: String = ModelManager.getDefaultTaggerModelId(),
     val confidenceThreshold: Float = 0.5f,
     val maxTags: Int = 10,
-    val excludedTags: List<String> = emptyList()
+    val excludedTags: Set<ImageTag> = emptySet()
 ) {
 }
 
@@ -60,7 +65,8 @@ data class SystemSettings(
 
 @Serializable
 data class SessionState(
-    val lastDirectory: String = System.getProperty("user.home"), // Default to Home
+    @Serializable(with = FileSerializer::class)
+    val lastDirectory: File? = null, // Default to Home
     val lastFocusedImageId: String? = null,
     val activeTab: ModelType = ModelType.TAGGER,
     val isSidebarVisible: Boolean = false,

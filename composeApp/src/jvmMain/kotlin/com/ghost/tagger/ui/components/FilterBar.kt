@@ -1,60 +1,20 @@
 package com.ghost.tagger.ui.components
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.*
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.List
-import androidx.compose.material.icons.rounded.DeleteSweep
-import androidx.compose.material.icons.rounded.FolderOpen
-import androidx.compose.material.icons.rounded.FolderSpecial
-import androidx.compose.material.icons.rounded.GridView
-import androidx.compose.material.icons.rounded.Tune
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Checkbox
-import androidx.compose.material3.Divider
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilledTonalIconButton
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedIconButton
-import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
-import androidx.compose.material3.Slider
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.VerticalDivider
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
+import androidx.compose.material.icons.rounded.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -64,6 +24,7 @@ import com.ghost.tagger.data.enums.SortBy
 import com.ghost.tagger.data.enums.SortOrder
 import com.ghost.tagger.data.models.settings.DirectorySettings
 import kotlinx.coroutines.launch
+import java.io.File
 
 @Composable
 fun FilterBar(
@@ -117,20 +78,26 @@ fun FilterBar(
 @Composable
 fun DirectorySection(
     modifier: Modifier = Modifier,
-    currentDir: String?,
+    currentDir: File?,
     // Use the simplified data class
     currentSettings: DirectorySettings = DirectorySettings(),
     onClear: () -> Unit,
-    onLoadDirectory: (String) -> Unit,
+    onRefresh: () -> Unit,
+    refreshing: Boolean = false,
+    onLoadDirectory: (File) -> Unit,
     onUpdateSettings: (DirectorySettings) -> Unit
-){
+) {
     var isFileDialogOpened by remember { mutableStateOf(false) }
     var isSettingsDialogOpened by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
+    val rotationAngle by animateFloatAsState(
+        targetValue = if (isFileDialogOpened) 360f else 0f,
+    )
+
     val openDir = rememberDirectoryPicker(title = "Select Folder") { file ->
         if (file != null) {
-            onLoadDirectory(file.absolutePath)
+            onLoadDirectory(file)
             isFileDialogOpened = false
         }
     }
@@ -151,12 +118,27 @@ fun DirectorySection(
         verticalAlignment = Alignment.CenterVertically
     ) {
         // Settings Button
+        if (currentDir != null) {
+            FilledTonalIconButton(
+                onClick = onRefresh,
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Icon(
+                    Icons.Rounded.Refresh,
+                    "Refresh",
+                    modifier = Modifier.rotate(rotationAngle)
+                )
+
+            }
+        }
+
         FilledTonalIconButton(
             onClick = { isSettingsDialogOpened = true },
             shape = RoundedCornerShape(12.dp)
         ) {
             Icon(Icons.Rounded.Tune, contentDescription = "Folder Options")
         }
+
 
         // Open Button
         Button(
@@ -184,7 +166,7 @@ fun DirectorySection(
 
 @Composable
 fun DirectorySettingsDialog(
-    currentDir: String?,
+    currentDir: File?,
     settings: DirectorySettings,
     onDismiss: () -> Unit,
     onApply: (DirectorySettings) -> Unit
@@ -246,7 +228,7 @@ fun DirectorySettingsDialog(
                         ) {
                             SelectionContainer {
                                 Text(
-                                    text = currentDir,
+                                    text = currentDir.path,
                                     modifier = Modifier.padding(12.dp),
                                     style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
                                     maxLines = 2,
@@ -274,7 +256,11 @@ fun DirectorySettingsDialog(
                     ) {
                         Column {
                             Text("Recursive Scan", style = MaterialTheme.typography.titleSmall)
-                            Text("Look inside subfolders", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(
+                                "Look inside subfolders",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                         }
                         Switch(
                             checked = tempSettings.isRecursive,

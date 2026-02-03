@@ -23,7 +23,7 @@ object MetadataReader {
     fun read(file: File): ImageMetadata {
         // 1. Basic File System Info (Always available)
         val defaultMeta = ImageMetadata(
-            path = file.absolutePath,
+            path = file,
             name = file.name,
             extension = file.extension,
             fileSizeBytes = file.length(),

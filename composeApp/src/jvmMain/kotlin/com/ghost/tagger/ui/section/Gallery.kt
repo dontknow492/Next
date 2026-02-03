@@ -4,6 +4,9 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedContentScope
 import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.foundation.LocalScrollbarStyle
+import androidx.compose.foundation.VerticalScrollbar
+import androidx.compose.foundation.background
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -13,16 +16,19 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollbarAdapter
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.DragHandle
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.VerticalDivider
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.PointerEventType
@@ -36,18 +42,18 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import co.touchlab.kermit.Logger
 import com.ghost.tagger.data.enums.GalleryMode
 import com.ghost.tagger.data.models.ImageItem
-import com.ghost.tagger.data.viewmodels.GalleryViewModel
-import com.ghost.tagger.data.viewmodels.SettingsViewModel
+import com.ghost.tagger.ui.viewmodels.GalleryViewModel
 import com.ghost.tagger.ui.components.*
 import org.koin.compose.viewmodel.koinViewModel
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyGridState
 import sh.calvin.reorderable.rememberReorderableLazyListState
+import java.io.File
 
 
 sealed class GalleryCommand {
     // 1. Navigation
-    data class LoadDirectory(val path: String, val recursive: Boolean) : GalleryCommand()
+    data class LoadDirectory(val path: File, val recursive: Boolean) : GalleryCommand()
     object Refresh : GalleryCommand()
 
     // 2. View mode
@@ -69,7 +75,7 @@ sealed class GalleryCommand {
 
     data class removeImage(val id: String) : GalleryCommand()
 
-    data class openInExplorer(val path: String) : GalleryCommand()
+    data class openInExplorer(val path: File) : GalleryCommand()
 
     data class onMove(val from: Int, val to: Int) : GalleryCommand()
 }
@@ -81,9 +87,8 @@ fun GallerySection(
     val viewModel: GalleryViewModel = koinViewModel()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-
     Column(modifier = modifier) {
-        Row(modifier = Modifier.heightIn(0.dp, 64.dp)) {
+        Row(modifier = Modifier.heightIn(0.dp, 68.dp)) {
             FilterBar(
                 searchQuery = uiState.searchQuery,
                 onSearch = viewModel::onSearch,
@@ -93,7 +98,7 @@ fun GallerySection(
                 onSortByChange = viewModel::onSortByChange,
                 sortOrder = uiState.sortOrder,
                 onSortOrderChange = viewModel::onSortOrderChange,
-                modifier = Modifier.weight(3.0f)
+                modifier = Modifier.weight(2.0f)
             )
             VerticalDivider()
             DirectorySection(
@@ -102,12 +107,14 @@ fun GallerySection(
                 onClear = viewModel::clearGallery,
                 onLoadDirectory = viewModel::loadDirectory,
                 currentSettings = uiState.advanceDirSettings,
+                refreshing = uiState.isLoading,
+                onRefresh = viewModel::refresh,
                 onUpdateSettings = viewModel::updateAdvanceFolderSettings
             )
         }
         DragDropFileBox(
             modifier = Modifier.weight(1.0f),
-            onFolderDrop = { file -> viewModel.loadDirectory(file.absolutePath) }
+            onFolderDrop = viewModel::loadDirectory
         ){
             ImageSection(viewModel = viewModel)
         }
@@ -127,7 +134,9 @@ private fun ImageSection(
     val action_map: (GalleryCommand) -> Unit = { command ->
         when (command) {
             is GalleryCommand.LoadDirectory -> viewModel.loadDirectory(command.path)
-            is GalleryCommand.Refresh -> viewModel.loadDirectory(uiState.currentDirectory ?: "")
+            is GalleryCommand.Refresh -> {
+                if (uiState.currentDirectory != null) viewModel.loadDirectory(uiState.currentDirectory!!) else Unit
+            }
             is GalleryCommand.SetViewMode -> viewModel.setViewMode(command.mode)
             is GalleryCommand.ToggleSelection -> viewModel.toggleSelection(
                 command.id,
@@ -153,10 +162,14 @@ private fun ImageSection(
 
     val openDir = rememberDirectoryPicker(title = "Open Image Folder") { file ->
         if (file != null) {
-            viewModel.loadDirectory(file.absolutePath)
+            viewModel.loadDirectory(file)
         }
     }
-    SharedTransitionLayout {
+    PullToRefreshBox(
+        isRefreshing = uiState.isLoading,
+        onRefresh = viewModel::refresh,
+    ){
+        SharedTransitionLayout {
         AnimatedContent(
             targetState = uiState.viewMode,
             label = "GalleryModeTransition",
@@ -210,6 +223,8 @@ private fun ImageSection(
             }
         }
     }
+    }
+
 
 }
 
@@ -238,81 +253,93 @@ fun GridSection(
         hapticFeedback.performHapticFeedback(HapticFeedbackType.SegmentFrequentTick)
     }
 
-    LazyVerticalGrid(
-        columns = GridCells.Adaptive(minImageDp),
-        state = lazyGridState,
-        modifier = modifier
-            // 1. THE GATEKEEPER: Intercept Scroll Events
-            .onPointerEvent(PointerEventType.Scroll) { event ->
-                val changes = event.changes
-                val isCtrlPressed = event.keyboardModifiers.isCtrlPressed || event.keyboardModifiers.isMetaPressed
+    val spacing = remember(minImageDp) {
+        (minImageDp * 0.08f).coerceIn(8.dp, 18.dp)
+    }
 
-                // Only interfere if CTRL is pressed
-                if (isCtrlPressed && changes.isNotEmpty()) {
-                    val scrollDelta = changes.first().scrollDelta.y
+    Box(modifier = modifier) {
+        LazyVerticalGrid(
+            columns = GridCells.Adaptive(minImageDp),
+            state = lazyGridState,
+            horizontalArrangement = Arrangement.spacedBy(spacing),
+            verticalArrangement = Arrangement.spacedBy(spacing),
+            modifier = Modifier.fillMaxSize()
+                // 1. THE GATEKEEPER: Intercept Scroll Events
+                .onPointerEvent(PointerEventType.Scroll) { event ->
+                    val changes = event.changes
+                    val isCtrlPressed = event.keyboardModifiers.isCtrlPressed || event.keyboardModifiers.isMetaPressed
 
-                    // 2. Determine Direction
-                    // Desktop scroll conventions:
-                    // Negative Y (Wheel Up) usually means "Zoom In"
-                    // Positive Y (Wheel Down) usually means "Zoom Out"
-                    if (scrollDelta != 0f) {
-                        val isZoomIn = scrollDelta < 0
-                        actions(GalleryCommand.onZoom(isZoomIn))
+                    // Only interfere if CTRL is pressed
+                    if (isCtrlPressed && changes.isNotEmpty()) {
+                        val scrollDelta = changes.first().scrollDelta.y
 
-                        // 3. CONSUME THE EVENT
-                        // This prevents the Grid from scrolling vertically while you are zooming
-                        changes.forEach { it.consume() }
-                    }
-                }
-            }
-//        state = listState,
-    ) {
-        items(items = images, key = { it.id }) { imageItem ->
-            ReorderableItem(reorderableLazyState, imageItem.id) {
-                val interactionSource = remember { MutableInteractionSource() }
-                ThumbnailCard(
-                    item = imageItem,
-                    focused = imageItem.id == focusedImageId,
-                    selected = imageItem.id in selectedIds,
-                    isSelectionVisible = selectedIds.isNotEmpty(),
-                    onFocus = { actions(GalleryCommand.FocusImage(imageItem.id)) },
-                    onToggleSelection = { ctrl, shift ->
-                        actions(
-                            GalleryCommand.ToggleSelection(
-                                imageItem.id,
-                                ctrl,
-                                shift
-                            )
-                        )
-                    },
-                    onDeleteClick = { actions(GalleryCommand.removeImage(imageItem.id)) },
-                    sharedTransitionScope = sharedTransitionScope,
-                    animatedContentScope = animatedContentScope,
-                    dragHandler = {
-                        IconButton(
-                            modifier = Modifier.draggableHandle(
-                                onDragStarted = {
-                                    hapticFeedback.performHapticFeedback(HapticFeedbackType.GestureThresholdActivate)
-                                },
-                                onDragStopped = {
-                                    hapticFeedback.performHapticFeedback(HapticFeedbackType.GestureEnd)
-                                },
-                                interactionSource = interactionSource,
-                            ),
-                            onClick = {},
-                        ) {
-                            Icon(Icons.Rounded.DragHandle, contentDescription = "Reorder")
+                        // 2. Determine Direction
+                        // Desktop scroll conventions:
+                        // Negative Y (Wheel Up) usually means "Zoom In"
+                        // Positive Y (Wheel Down) usually means "Zoom Out"
+                        if (scrollDelta != 0f) {
+                            val isZoomIn = scrollDelta < 0
+                            actions(GalleryCommand.onZoom(isZoomIn))
+
+                            // 3. CONSUME THE EVENT
+                            // This prevents the Grid from scrolling vertically while you are zooming
+                            changes.forEach { it.consume() }
                         }
                     }
-                )
+                }
+            //        state = listState,
+        ) {
+            items(items = images, key = { it.id }) { imageItem ->
+                ReorderableItem(reorderableLazyState, imageItem.id) {
+                    val interactionSource = remember { MutableInteractionSource() }
+                    ThumbnailCard(
+                        item = imageItem,
+                        focused = imageItem.id == focusedImageId,
+                        selected = imageItem.id in selectedIds,
+                        isSelectionVisible = selectedIds.isNotEmpty(),
+                        onFocus = { actions(GalleryCommand.FocusImage(imageItem.id)) },
+                        onToggleSelection = { ctrl, shift ->
+                            actions(
+                                GalleryCommand.ToggleSelection(
+                                    imageItem.id,
+                                    ctrl,
+                                    shift
+                                )
+                            )
+                        },
+                        onDeleteClick = { actions(GalleryCommand.removeImage(imageItem.id)) },
+                        sharedTransitionScope = sharedTransitionScope,
+                        animatedContentScope = animatedContentScope,
+                        dragHandler = {
+                            IconButton(
+                                modifier = Modifier.draggableHandle(
+                                    onDragStarted = {
+                                        hapticFeedback.performHapticFeedback(HapticFeedbackType.GestureThresholdActivate)
+                                    },
+                                    onDragStopped = {
+                                        hapticFeedback.performHapticFeedback(HapticFeedbackType.GestureEnd)
+                                    },
+                                    interactionSource = interactionSource,
+                                ),
+                                onClick = {},
+                            ) {
+                                Icon(Icons.Rounded.DragHandle, contentDescription = "Reorder")
+                            }
+                        }
+                    )
+                }
+            }
+            // Loading indicator as the last item
+            if (isLoading) {
+                item {
+                    LoadingIndictor()
+                }
             }
         }
-        // Loading indicator as the last item
-        if (isLoading) {
-            item {
-                LoadingIndictor()
-            }
-        }
+        MyVerticalScrollBar(
+            modifier = Modifier.align(Alignment.CenterEnd),
+            adapter = rememberScrollbarAdapter(lazyGridState),
+        )
     }
 }
 
@@ -337,57 +364,63 @@ fun LandscapeSection(
         actions(GalleryCommand.onMove(from.index, to.index))
         hapticFeedback.performHapticFeedback(HapticFeedbackType.SegmentFrequentTick)
     }
-    LazyColumn(
-        state = lazyListState,
-        modifier = modifier
-    ) {
-        items(items = images, key = { it.id }) { imageItem ->
-            ReorderableItem(reorderableLazyListState, imageItem.id) {
-                val interactionSource = remember { MutableInteractionSource() }
-                LandscapeImageCard(
-                    item = imageItem,
-                    focused = imageItem.id == focusedImageId,
-                    onFocus = { actions(GalleryCommand.FocusImage(imageItem.id)) },
-                    selected = imageItem.id in selectedIds,
-                    isSelectionVisible = selectedIds.isNotEmpty(),
-                    onPathClick = { actions(GalleryCommand.openInExplorer(imageItem.metadata.path)) },
-                    onToggleSelection = { ctrl, shift ->
-                        actions(
-                            GalleryCommand.ToggleSelection(
-                                imageItem.id,
-                                ctrl,
-                                shift
+    Box {
+        LazyColumn(
+            state = lazyListState,
+            modifier = modifier
+        ) {
+            items(items = images, key = { it.id }) { imageItem ->
+                ReorderableItem(reorderableLazyListState, imageItem.id) {
+                    val interactionSource = remember { MutableInteractionSource() }
+                    LandscapeImageCard(
+                        item = imageItem,
+                        focused = imageItem.id == focusedImageId,
+                        onFocus = { actions(GalleryCommand.FocusImage(imageItem.id)) },
+                        selected = imageItem.id in selectedIds,
+                        isSelectionVisible = selectedIds.isNotEmpty(),
+                        onPathClick = { actions(GalleryCommand.openInExplorer(imageItem.metadata.path)) },
+                        onToggleSelection = { ctrl, shift ->
+                            actions(
+                                GalleryCommand.ToggleSelection(
+                                    imageItem.id,
+                                    ctrl,
+                                    shift
+                                )
                             )
-                        )
-                    },
-                    onDeleteClick = { actions(GalleryCommand.removeImage(imageItem.id)) },
-                    sharedTransitionScope = sharedTransitionScope,
-                    animatedContentScope = animatedContentScope,
-                    dragHandler = {
-                        IconButton(
-                            modifier = Modifier.draggableHandle(
-                                onDragStarted = {
-                                    hapticFeedback.performHapticFeedback(HapticFeedbackType.GestureThresholdActivate)
-                                },
-                                onDragStopped = {
-                                    hapticFeedback.performHapticFeedback(HapticFeedbackType.GestureEnd)
-                                },
-                                interactionSource = interactionSource,
-                            ),
-                            onClick = {},
-                        ) {
-                            Icon(Icons.Rounded.DragHandle, contentDescription = "Reorder")
+                        },
+                        onDeleteClick = { actions(GalleryCommand.removeImage(imageItem.id)) },
+                        sharedTransitionScope = sharedTransitionScope,
+                        animatedContentScope = animatedContentScope,
+                        dragHandler = {
+                            IconButton(
+                                modifier = Modifier.draggableHandle(
+                                    onDragStarted = {
+                                        hapticFeedback.performHapticFeedback(HapticFeedbackType.GestureThresholdActivate)
+                                    },
+                                    onDragStopped = {
+                                        hapticFeedback.performHapticFeedback(HapticFeedbackType.GestureEnd)
+                                    },
+                                    interactionSource = interactionSource,
+                                ),
+                                onClick = {},
+                            ) {
+                                Icon(Icons.Rounded.DragHandle, contentDescription = "Reorder")
+                            }
                         }
-                    }
-                )
+                    )
+                }
+            }
+            // Loading indicator as the last item
+            if (isLoading) {
+                item {
+                    LoadingIndictor()
+                }
             }
         }
-        // Loading indicator as the last item
-        if (isLoading) {
-            item {
-                LoadingIndictor()
-            }
-        }
+        MyVerticalScrollBar(
+            modifier = Modifier.align(Alignment.CenterEnd),
+            adapter = rememberScrollbarAdapter(lazyListState),
+        )
     }
 }
 

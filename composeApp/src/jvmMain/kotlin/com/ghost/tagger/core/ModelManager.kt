@@ -58,10 +58,10 @@ object ModelManager {
     }
 
     private fun updateModelsConfiguration(settings: AppSettings) {
-        val newRoot = if (!settings.modelDownloadPath.isNullOrBlank()) {
-            File(settings.modelDownloadPath)
+        val newRoot = if (!settings.modelDownloadPath.path.isNullOrBlank()) {
+            settings.modelDownloadPath
         } else {
-            File(System.getProperty("user.home"), ".ghosttagger/models")
+            AppSettings().modelDownloadPath //default
         }
 
         if (!newRoot.exists()) newRoot.mkdirs()
@@ -161,8 +161,8 @@ object ModelManager {
             File(model.rootFolder, fileName)
         } else {
             // Fallback: Construct from settings (Safe default)
-            val root = if (_currentSettings.value.modelDownloadPath.isNotBlank()) {
-                File(_currentSettings.value.modelDownloadPath!!)
+            val root = if (_currentSettings.value.modelDownloadPath.path.isNotBlank()) {
+                _currentSettings.value.modelDownloadPath
             } else {
                 File(System.getProperty("user.home"), ".ghosttagger/models")
             }

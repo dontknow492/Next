@@ -198,7 +198,7 @@ fun LandscapeImageCard(
                         shape = MaterialTheme.shapes.extraSmall,
                     ) {
                         Text(
-                            text = item.metadata.path,
+                            text = item.metadata.path.path,
                             overflow = TextOverflow.Ellipsis,
                             style = MaterialTheme.typography.bodySmall,
                             maxLines = 1,

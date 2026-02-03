@@ -27,10 +27,10 @@ fun ModernSearchBar(
     OutlinedTextField(
         value = query,
         onValueChange = onQueryChange,
-        modifier = modifier.height(48.dp), // Compact height
+        modifier = modifier, // Compact height
         placeholder = {
             Text(
-                "Search images...",
+                "Search images by name, tag, extension, etc...",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

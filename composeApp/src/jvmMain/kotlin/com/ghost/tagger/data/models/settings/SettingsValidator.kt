@@ -1,7 +1,5 @@
 package com.ghost.tagger.data.models.settings
 
-import com.ghost.tagger.core.ModelManager
-import com.ghost.tagger.ui.components.ModelSelector
 import java.io.File
 
 object SettingsValidator {
@@ -31,11 +29,12 @@ object SettingsValidator {
 //            }?.id ?: ModelManager.taggerModels.first().id,
 
             confidenceThreshold = settings.confidenceThreshold.coerceIn(0.0f, 1.0f),
-            maxTags = settings.maxTags.coerceIn(1, 100),
+            maxTags = settings.maxTags.coerceIn(1, 200),
             excludedTags = settings.excludedTags
-                .map { it.trim().lowercase() } // Normalize tags for easier comparison
-                .filter { it.isNotEmpty() }
-                .distinct() // Remove duplicates
+                .map { tag -> tag.copy(name = tag.name.trim().lowercase()) }
+                .filter { tag -> tag.name.isNotBlank() }
+                .distinctBy { tag -> tag.name }
+                .toSet()
         )
     }
 

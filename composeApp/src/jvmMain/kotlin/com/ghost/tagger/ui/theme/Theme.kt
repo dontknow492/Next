@@ -6,6 +6,7 @@ package com.ghost.tagger.ui.theme
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import com.ghost.tagger.data.enums.ThemeMode
 
 private val lightColorScheme = lightColorScheme(
     primary = PrimaryLight,
@@ -112,9 +113,14 @@ private val darkColorScheme = darkColorScheme(
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun AppTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
+    themeMode: ThemeMode = ThemeMode.AUTO,
     content: @Composable() () -> Unit,
 ) {
+    val darkTheme = when (themeMode) {
+        ThemeMode.LIGHT -> false
+        ThemeMode.DARK -> true
+        ThemeMode.AUTO -> isSystemInDarkTheme()
+    }
     val colorScheme = when {
         darkTheme -> darkColorScheme
         else -> lightColorScheme

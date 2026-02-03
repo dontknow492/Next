@@ -12,19 +12,20 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
+import java.io.File
 
 @Composable
 fun OpenDirectoryPanel(
     modifier: Modifier = Modifier,
     // Pass ViewModel action here
-    onDirectorySelected: (String) -> Unit
+    onDirectorySelected: (File) -> Unit
 ) {
     // 1. Setup the Picker
     var isFileDialogOpened by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val openDir = rememberDirectoryPicker(title = "Open Image Folder") { file ->
         if (file != null) {
-            onDirectorySelected(file.absolutePath)
+            onDirectorySelected(file)
         }
         isFileDialogOpened = false
     }

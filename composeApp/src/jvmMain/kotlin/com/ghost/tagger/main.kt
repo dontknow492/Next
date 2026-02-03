@@ -39,17 +39,6 @@ fun main() {
     }
 
     application {
-        // 2. Retrieve the Repo from Koin (Java helper is easiest in 'main')
-        // We use 'remember' so we don't look it up every frame.
-        val settingsRepo = remember {
-            GlobalContext.get().get<SettingsRepository>()
-        }
-
-        // 3. Load the path safely
-        // Assuming your repo has a suspend function like getModelPath()
-        // or a Flow. Here is the safest way to handle the async load:
-        ModelManager.initialize(settingsRepo.settings)
-
         val state = rememberWindowState(size = DpSize(1200.dp, 800.dp))
 
         Window(
@@ -57,10 +46,7 @@ fun main() {
             onCloseRequest = ::exitApplication,
             state = state
         ) {
-            AppTheme(darkTheme = true) {
-                MainScreen()
-//                GallerySection()
-            }
+            MainScreen()
         }
     }
 }

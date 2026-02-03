@@ -1,9 +1,10 @@
 package com.ghost.tagger.data.models
 
 import com.ghost.tagger.TagSource
+import java.io.File
 
 data class ImageMetadata(
-    val path: String,
+    val path: File,
     val name: String,
     val extension: String,
     val fileSizeBytes: Long,

@@ -19,11 +19,12 @@ import coil3.compose.SubcomposeAsyncImage
 import coil3.request.ImageRequest
 import coil3.request.crossfade
 import coil3.size.Precision
+import java.io.File
 
 @Composable
 fun ImageView(
     modifier: Modifier = Modifier,
-    path: String,
+    path: File,
     contentDescription: String?,
     contentScale: ContentScale = ContentScale.Crop
 ) {

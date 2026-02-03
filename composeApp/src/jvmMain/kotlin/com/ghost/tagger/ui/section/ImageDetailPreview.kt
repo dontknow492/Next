@@ -1,4 +1,4 @@
-package com.ghost.tagger.ui.components
+package com.ghost.tagger.ui.section
 
 import androidx.compose.animation.*
 import androidx.compose.foundation.*
@@ -25,82 +25,83 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.ghost.tagger.ui.actions.DetailAction
 import com.ghost.tagger.data.models.ImageItem
 import com.ghost.tagger.data.models.ImageTag
+import com.ghost.tagger.ui.components.ImageView
+import com.ghost.tagger.ui.viewmodels.ImageDetailViewModel
+import com.ghost.tagger.ui.components.TagsSection
+import org.koin.compose.viewmodel.koinViewModel
 
-
-sealed interface DetailAction {
-    data class UpdateDescription(val value: String) : DetailAction
-    data class RemoveTag(val tag: ImageTag) : DetailAction
-    data class AddTag(val tag: String) : DetailAction
-    object ClearTags : DetailAction
-    object GenerateTags : DetailAction
-    object SaveMetadata : DetailAction
-    object OpenInExplorer : DetailAction
-    object ClosePreview : DetailAction
-}
 
 @Composable
 fun ImageDetailPreview(
     modifier: Modifier = Modifier,
-    image: ImageItem,
-    visible: Boolean = true,
-    focusedImageId: String? = null,
-    actions: (DetailAction) -> Unit
+    onClose: ()->Unit,
+//    actions: (DetailAction) -> Unit
 ) {
+    val viewModel: ImageDetailViewModel = koinViewModel()
+
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     // Scroll state for the whole panel
     val scrollState = rememberScrollState()
-
-    AnimatedVisibility(
-            visible = focusedImageId != null && visible,
-            enter = slideInHorizontally(
-                // start the content off‑screen to the right
-                initialOffsetX = { fullWidth -> fullWidth }
-            ),
-            exit = slideOutHorizontally(
-                // slide the content off‑screen to the right
-                targetOffsetX = { fullWidth -> fullWidth }
-            )
-        ) {
-
+    if(uiState.activeImage != null){
         Row {
-            VerticalDivider()
-            Column(
-        modifier = modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.surface)
-            .verticalScroll(scrollState)
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(24.dp)
-    ) {
-        // 1. Aesthetic Image Header (With Floating Badges)
-        ImageHeader(image, actions)
+        VerticalDivider()
+        Column(
+            modifier = modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.surface)
+                .verticalScroll(scrollState)
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(24.dp)
+        ) {
+            // 1. Aesthetic Image Header (With Floating Badges)
+            ImageHeader(uiState.activeImage!!, viewModel::handleAction, onClose)
 
-        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
 
-        // 2. Metadata Grid (Quick Stats)
-        MetadataGrid(image)
+            // 2. Metadata Grid (Quick Stats)
+            MetadataGrid(uiState.activeImage!!)
 
-        // 3. Description Editor
-        DescriptionSection(
-            description = image.metadata.description ?: "",
-            onUpdate = { actions(DetailAction.UpdateDescription(it)) }
-        )
+            // 3. Description Editor
+            DescriptionSection(
+                description = uiState.activeImage!!.metadata.description ?: "",
+                onUpdate = { viewModel.handleAction(DetailAction.UpdateDescription(it)) }
+            )
 
-        // 4. Tags Management (The Complex Part)
-        TagsSection(
-            tags = image.metadata.tags,
-            onRemove = { actions(DetailAction.RemoveTag(it)) },
-            onAdd = { actions(DetailAction.AddTag(it)) },
-            onClear = { actions(DetailAction.ClearTags) },
-            onGenerate = { actions(DetailAction.GenerateTags) },
-            isTagging = image.isTagging
-        )
+            // 4. Tags Management (The Complex Part)
+            TagsSection(
+                title = "Tags",
+                tags = uiState.activeImage!!.metadata.tags,
+                onRemove = { viewModel.handleAction(DetailAction.RemoveTag(it)) },
+                onAdd = { viewModel.handleAction(DetailAction.AddTag(it)) },
+                onClear = { viewModel.handleAction(DetailAction.ClearTags) },
+            )
+            Spacer(Modifier.height(8.dp))
+            Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp)) {
+                GenerateAction(
+                    isTagging = uiState.activeImage!!.isTagging,
+                    onGenerate = { viewModel.handleAction(DetailAction.GenerateTags) }
+                )
 
-        Spacer(Modifier.height(40.dp)) // Bottom Padding
-    }
+                if(uiState.dataModified){
+                    Spacer(Modifier.height(8.dp))
+                    SaveAction(
+                        onSave = { viewModel.handleAction(DetailAction.SaveMetadata) },
+                        isSaving = uiState.isSaving
+                    )
+                }
+
+            }
+
+            Spacer(Modifier.height(40.dp)) // Bottom Padding
         }
     }
+    }
+
+
 
 
 }
@@ -110,7 +111,7 @@ fun ImageDetailPreview(
 // =========================================================================
 
 @Composable
-private fun ImageHeader(image: ImageItem, actions: (DetailAction) -> Unit) {
+private fun ImageHeader(image: ImageItem, actions: (DetailAction) -> Unit, onClose: () -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Box(
             modifier = Modifier
@@ -151,15 +152,17 @@ private fun ImageHeader(image: ImageItem, actions: (DetailAction) -> Unit) {
             }
 
             IconButton(
-                onClick = { actions(DetailAction.ClosePreview) },
+                onClick = onClose,
                 modifier = Modifier
                     .align(Alignment.TopEnd)
                     .padding(8.dp)
                     .size(32.dp)
                     .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.8f), CircleShape)
             ) {
-                Icon(Icons.Rounded.Close, tint = MaterialTheme.colorScheme.error,
-                    contentDescription = "Close", modifier = Modifier.size(18.dp))
+                Icon(
+                    Icons.Rounded.Close, tint = MaterialTheme.colorScheme.error,
+                    contentDescription = "Close", modifier = Modifier.size(18.dp)
+                )
             }
         }
 
@@ -173,7 +176,7 @@ private fun ImageHeader(image: ImageItem, actions: (DetailAction) -> Unit) {
                 overflow = TextOverflow.Ellipsis
             )
             Text(
-                text = image.metadata.path,
+                text = image.metadata.path.absolutePath,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
@@ -213,126 +216,63 @@ private fun DescriptionSection(description: String, onUpdate: (String) -> Unit) 
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun TagsSection(
-    tags: List<ImageTag>,
+private fun GenerateAction(
+    modifier: Modifier = Modifier,
     isTagging: Boolean,
-    onRemove: (ImageTag) -> Unit,
-    onAdd: (String) -> Unit,
-    onClear: () -> Unit,
     onGenerate: () -> Unit
 ) {
-    // Collapsing Logic
-    var isExpanded by remember { mutableStateOf(false) }
-    val showTags = if (isExpanded) tags else tags.take(15)
-    val hiddenCount = tags.size - 15
 
-    // Add Tag Input Logic
-    var newTagText by remember { mutableStateOf("") }
-
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        // Header Row
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            SectionLabel("Tags (${tags.size})", Icons.AutoMirrored.Rounded.Label)
-
-            // Clear Button
-            if (tags.isNotEmpty()) {
-                TextButton(
-                    onClick = onClear,
-                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
-                ) {
-                    Text("Clear All")
-                }
-            }
-        }
-
-        // 1. Tag Input Field
-        OutlinedTextField(
-            value = newTagText,
-            onValueChange = { newTagText = it },
-            modifier = Modifier.fillMaxWidth(),
-            placeholder = { Text("Add tag...") },
-            trailingIcon = {
-                IconButton(onClick = {
-                    if (newTagText.isNotBlank()) {
-                        onAdd(newTagText)
-                        newTagText = ""
-                    }
-                }) {
-                    Icon(Icons.Default.Add, null)
-                }
-            },
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-            keyboardActions = KeyboardActions(onDone = {
-                 if (newTagText.isNotBlank()) {
-                    onAdd(newTagText)
-                    newTagText = ""
-                }
-            }),
-            singleLine = true,
-            shape = RoundedCornerShape(50), // Pill shape input
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-                unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-                unfocusedBorderColor = Color.Transparent,
-                focusedBorderColor = MaterialTheme.colorScheme.primary.copy(0.5f)
+    Button(
+        onClick = onGenerate,
+        modifier = modifier.fillMaxWidth().height(50.dp),
+        shape = RoundedCornerShape(12.dp),
+        enabled = !isTagging
+    ) {
+        if (isTagging) {
+            CircularProgressIndicator(
+                modifier = Modifier.size(20.dp),
+                strokeWidth = 2.dp,
+                color = MaterialTheme.colorScheme.onPrimary
             )
-        )
-
-        // 2. Tags Cloud (FlowRow)
-        AnimatedContent(targetState = showTags) { currentTags ->
-            FlowRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                currentTags.forEach { tag ->
-                    AestheticTagChip(tag, onRemove)
-                }
-
-                // "Show More" Button inside the flow
-                if (!isExpanded && hiddenCount > 0) {
-                    SuggestionChip(
-                        onClick = { isExpanded = true },
-                        label = { Text("+$hiddenCount more") },
-                        colors = SuggestionChipDefaults.suggestionChipColors(
-                            containerColor = MaterialTheme.colorScheme.secondaryContainer
-                        )
-                    )
-                } else if (isExpanded && tags.size > 15) {
-                    SuggestionChip(
-                        onClick = { isExpanded = false },
-                        label = { Text("Show Less") }
-                    )
-                }
-            }
-        }
-
-        // 3. Main Action Button
-        Spacer(Modifier.height(8.dp))
-        Button(
-            onClick = onGenerate,
-            modifier = Modifier.fillMaxWidth().height(50.dp),
-            shape = RoundedCornerShape(12.dp),
-            enabled = !isTagging
-        ) {
-            if (isTagging) {
-                CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.onPrimary)
-                Spacer(Modifier.width(12.dp))
-                Text("Analyzing Image...")
-            } else {
-                Icon(Icons.Rounded.AutoAwesome, null, modifier = Modifier.size(18.dp))
-                Spacer(Modifier.width(8.dp))
-                Text("Generate AI Tags")
-            }
+            Spacer(Modifier.width(12.dp))
+            Text("Analyzing Image...")
+        } else {
+            Icon(Icons.Rounded.AutoAwesome, null, modifier = Modifier.size(18.dp))
+            Spacer(Modifier.width(8.dp))
+            Text("Generate")
         }
     }
 }
+
+@Composable
+private fun SaveAction(
+    modifier: Modifier = Modifier,
+    onSave: () -> Unit,
+    isSaving: Boolean,
+) {
+
+    Button(
+        onClick = onSave,
+        modifier = modifier.fillMaxWidth().height(50.dp),
+        shape = RoundedCornerShape(12.dp),
+    ) {
+        if (isSaving) {
+            CircularProgressIndicator(
+                modifier = Modifier.size(20.dp),
+                strokeWidth = 2.dp,
+                color = MaterialTheme.colorScheme.onPrimary
+            )
+            Spacer(Modifier.width(12.dp))
+            Text("Saving metadata....")
+        } else {
+            Icon(Icons.Rounded.Save, "Save changes", modifier = Modifier.size(18.dp))
+            Spacer(Modifier.width(8.dp))
+            Text("Save")
+        }
+    }
+}
+
 
 // =========================================================================
 // ATOMS (The small reusable aesthetic bits)
@@ -387,3 +327,4 @@ fun BadgeText(text: String) {
         style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp, fontWeight = FontWeight.Bold)
     )
 }
+
