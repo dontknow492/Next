@@ -1,6 +1,7 @@
 package com.ghost.tagger.core
 
-
+import co.touchlab.kermit.Logger
+import com.adobe.internal.xmp.XMPMetaFactory
 import com.drew.imaging.ImageMetadataReader
 import com.drew.metadata.exif.ExifSubIFDDirectory
 import com.drew.metadata.iptc.IptcDirectory
@@ -31,36 +32,86 @@ object MetadataReader {
         )
 
         return try {
-            val metadata = ImageMetadataReader.readMetadata(file)
+            // --- Step A: Read Embedded Metadata ---
+            val embeddedMetadata = try {
+                ImageMetadataReader.readMetadata(file)
+            } catch (e: Exception) {
+                null
+            }
 
-            // 2. Extract Dimensions (Width x Height)
-            val (width, height) = extractDimensions(metadata)
+            // --- Step B: Read Sidecar Metadata (XMP) ---
+            // We check for image.jpg.xmp AND image.xmp
+            val sidecarFile = findSidecarFile(file)
+            val sidecarMetadata = if (sidecarFile != null) {
+                try {
+                    // Try standard detection first
+                    ImageMetadataReader.readMetadata(sidecarFile)
+                } catch (e: Exception) {
+                    // Fallback: Manually parse XMP if detector fails (common for standalone .xmp)
+                    // The library throws "File format could not be determined" for raw XMP text files.
+                    try {
+                        val xmpMeta = XMPMetaFactory.parseFromBuffer(sidecarFile.readBytes())
+                        val manualMeta = com.drew.metadata.Metadata()
+                        val dir = XmpDirectory()
+                        dir.setXMPMeta(xmpMeta)
+                        manualMeta.addDirectory(dir)
+                        manualMeta
+                    } catch (xmpEx: Exception) {
+                        Logger.e("Failed to read sidecar ${sidecarFile.name}: ${e.message} / ${xmpEx.message}")
+                        null
+                    }
+                }
+            } else null
 
-            // 3. Extract Date Taken (EXIF preference)
-            val dateTaken = metadata.getFirstDirectoryOfType(ExifSubIFDDirectory::class.java)
-                ?.getDate(ExifSubIFDDirectory.TAG_DATETIME_ORIGINAL)
-                ?.time ?: file.lastModified()
+            // --- Step C: Extract & Merge ---
 
-            // 4. Extract Description & Tags (XMP > IPTC)
-            // This is crucial for your AI logic.
-            val (desc, tags) = extractContentMetadata(metadata)
+            // 1. Dimensions (Only exists in image file)
+            val (width, height) = if (embeddedMetadata != null) {
+                extractDimensions(embeddedMetadata)
+            } else Pair(0, 0)
+
+            // 2. Date Taken (Prioritize Embedded EXIF, fallback to File Modified)
+            val dateTaken = if (embeddedMetadata != null) {
+                embeddedMetadata.getFirstDirectoryOfType(ExifSubIFDDirectory::class.java)
+                    ?.getDate(ExifSubIFDDirectory.TAG_DATETIME_ORIGINAL)
+                    ?.time ?: file.lastModified()
+            } else file.lastModified()
+
+            // 3. Content (Description & Tags) - THE MERGE LOGIC
+            // Strategy: Sidecar overrides Image if present.
+            val (embDesc, embTags) = if (embeddedMetadata != null) extractContentMetadata(embeddedMetadata) else Pair(null, emptyList())
+            val (sideDesc, sideTags) = if (sidecarMetadata != null) extractContentMetadata(sidecarMetadata) else Pair(null, emptyList())
+
+            // Description: Sidecar > Embedded
+            val finalDescription = if (!sideDesc.isNullOrBlank()) sideDesc else embDesc
+
+            // Tags: Merge unique tags from both sources
+            val mergedTags = (embTags + sideTags).distinctBy { it.name }
 
             defaultMeta.copy(
                 width = width,
                 height = height,
                 dateTaken = dateTaken,
-                description = desc,
-                tags = tags
+                description = finalDescription,
+                tags = mergedTags
             )
 
         } catch (e: Exception) {
             // Log error in production
-            println("Metadata Error for ${file.name}: ${e.message}")
+            Logger.e("Metadata Critical Error for ${file.name}: ${e.message}")
             defaultMeta
         }
     }
 
     // --- Helpers ---
+
+    private fun findSidecarFile(imageFile: File): File? {
+        val candidates = listOf(
+            File(imageFile.parent, "${imageFile.name}.xmp"),            // image.jpg.xmp (Darktable/Adobe style)
+            File(imageFile.parent, "${imageFile.nameWithoutExtension}.xmp") // image.xmp (Windows/Standard style)
+        )
+        return candidates.firstOrNull { it.exists() }
+    }
 
     private fun extractDimensions(metadata: com.drew.metadata.Metadata): Pair<Int, Int> {
         // Try JPEG
@@ -76,10 +127,9 @@ object MetadataReader {
 
     private fun extractContentMetadata(metadata: com.drew.metadata.Metadata): Pair<String?, List<ImageTag>> {
         var description: String? = null
-        val tags = mutableSetOf<String>() // Set to avoid duplicates
+        val tags = mutableSetOf<String>()
 
         // A. Try XMP (The Modern Standard)
-        // XMP stores data as XML. We access the XMPMeta object directly.
         val xmpDirs = metadata.getDirectoriesOfType(XmpDirectory::class.java)
         for (dir in xmpDirs) {
             val xmpMeta = dir.xmpMeta
@@ -103,8 +153,7 @@ object MetadataReader {
             }
         }
 
-        // B. Try IPTC (Legacy Fallback)
-        // Only if we missed data in XMP
+        // B. Try IPTC (Legacy Fallback) - Only if XMP failed
         if (description == null || tags.isEmpty()) {
             val iptcDir = metadata.getFirstDirectoryOfType(IptcDirectory::class.java)
             if (iptcDir != null) {

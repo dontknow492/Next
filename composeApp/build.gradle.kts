@@ -70,6 +70,8 @@ kotlin {
             //metadata
             implementation(libs.metadata.extractor)
             implementation(libs.common.imaging)
+            implementation(libs.kim)
+
 
             //logger
             implementation(libs.kermit)

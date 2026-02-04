@@ -24,7 +24,7 @@ val appModule = module {
     single { SettingsManager("GhostAITagger") }
     single { SettingsRepository(get(), CoroutineScope(SupervisorJob() + Dispatchers.IO)) }
     single { GalleryRepository() }
-    single { ImageRepository(get()) }
+    single { ImageRepository(get(), get()) }
 
 
     single {

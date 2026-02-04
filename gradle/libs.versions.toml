@@ -21,6 +21,7 @@ common-imaging = "1.0.0-alpha6"
 kermit = "2.0.8"
 ktorVersion = "3.4.0"
 djl = "0.36.0"
+kim = "0.26.2"
 
 
 [libraries]
@@ -91,6 +92,7 @@ koin-test = { module = "io.insert-koin:koin-test" }
 #metadata
 metadata-extractor = { module = "com.drewnoakes:metadata-extractor", version.ref = "metadata-extractor"}
 common-imaging = { module = "org.apache.commons:commons-imaging", version.ref = "common-imaging"}
+kim = { module = "com.ashampoo:kim", version.ref = "kim"}
 
 #logger
 kermit = { module = "co.touchlab:kermit", version.ref = "kermit"}

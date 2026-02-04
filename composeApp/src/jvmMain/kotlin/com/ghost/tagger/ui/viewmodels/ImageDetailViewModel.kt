@@ -228,7 +228,7 @@ class ImageDetailViewModel(
         viewModelScope.launch(Dispatchers.IO) {
             _uiState.update { it.copy(isSaving = true) }
             imageRepository.updateImage(image, disk = disk, onError = ::onError)
-            _uiState.update { it.copy(isSaving = false, dataModified = false) }
+            _uiState.update { it.copy(isSaving = false, dataModified = !disk) }
         }
     }
 

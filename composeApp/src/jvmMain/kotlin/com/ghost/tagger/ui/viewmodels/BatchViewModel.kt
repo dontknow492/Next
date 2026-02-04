@@ -2,12 +2,15 @@ package com.ghost.tagger.ui.viewmodels
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.ghost.tagger.TagSource
 import com.ghost.tagger.core.ModelManager
 import com.ghost.tagger.data.models.ImageItem
 import com.ghost.tagger.data.models.ImageTag
 import com.ghost.tagger.data.repository.ImageRepository
 import com.ghost.tagger.ui.state.BatchDetailUiState
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -21,6 +24,7 @@ class BatchDetailViewModel(
 
     private val _uiState = MutableStateFlow(BatchDetailUiState())
     val uiState = _uiState.asStateFlow()
+
 
     /**
      * Main Entry Point: Call this when the user's selection changes in the parent view.
@@ -51,7 +55,7 @@ class BatchDetailViewModel(
             if (currentImage.metadata.tags.any { it.name.equals(cleanTag, ignoreCase = true) }) {
                 currentImage // No change
             } else {
-                val newTag = ImageTag(cleanTag, confidence = 1.0) // Manual tags get max confidence
+                val newTag = ImageTag(cleanTag, confidence = 1.0, source = TagSource.MANUAL) // Manual tags get max confidence
                 val newTags = currentImage.metadata.tags + newTag
                 currentImage.copy(metadata = currentImage.metadata.copy(tags = newTags))
             }
@@ -154,18 +158,29 @@ class BatchDetailViewModel(
      * Helper: Applies a transformation function to every image in the selection
      * and updates the StateFlow.
      */
-    private inline fun updateImages(transform: (ImageItem) -> ImageItem) {
+    private inline fun updateImages(disk: Boolean = false, crossinline transform: (ImageItem) -> ImageItem) {
 //        viewModelScope.launch(Dispatchers.IO) {
 //            imageRepository.updateImages(
 //                _uiState.value.selectedImages.map(transform)
 //            )
 //        }
-        _uiState.update { state ->
-            val newImages = state.selectedImages.map { image ->
+        viewModelScope.launch(Dispatchers.IO) {
+            _uiState.update { it.copy(isSaving = true) }
+            val newImages = uiState.value.selectedImages.map { image ->
                 transform(image)
             }
-            state.copy(selectedImages = newImages)
+            imageRepository.updateImages(newImages, disk = disk, onError = ::onError)
+            _uiState.update { it.copy(isSaving = false) }
         }
     }
+
+    private fun onError(e: Exception) {
+        _uiState.update { it.copy(error = e.message) }
+    }
+
+    fun onClearError() {
+        _uiState.update { it.copy(error = null) }
+    }
+
 
 }

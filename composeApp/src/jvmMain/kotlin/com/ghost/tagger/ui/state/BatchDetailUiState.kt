@@ -7,7 +7,9 @@ data class BatchDetailUiState(
     val selectedImages: List<ImageItem> = emptyList(),
     val isGenerating: Boolean = false,
     val progressCurrent: Int = 0,
-    val progressTotal: Int = 0
+    val progressTotal: Int = 0,
+    val error: String? = null,
+    val isSaving: Boolean = false,
 ){
     val totalSize: String
         get() {

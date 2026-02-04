@@ -20,8 +20,10 @@ import java.io.File
  * 3. Handles updates (tagging, metadata changes) and notifies all observers.
  */
 class ImageRepository(
-    private val galleryScanner: GalleryRepository
+    private val galleryScanner: GalleryRepository,
+    private val settingsRepository: SettingsRepository
 ) {
+//    val settings by settingsRepository.settings.collect {  }
     // A scope that lives as long as the app/repository to keep data alive
     private val repoScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
@@ -88,12 +90,7 @@ class ImageRepository(
             list.map { if (it.id == updatedItem.id) updatedItem else it }
         }
         if (disk){
-            MetadataWriter.save(
-                file = updatedItem.metadata.path,
-                metadata = updatedItem.metadata,
-                options = SaveOptions(),
-                onError = onError
-            )
+            saveMetadataToDisk(updatedItem, onError)
         }
     }
 
@@ -102,7 +99,7 @@ class ImageRepository(
      * Updates multiple images at once.
      * Use this for Batch Operations to prevent N separate UI refreshes.
      */
-    fun updateImages(updatedItems: List<ImageItem>) {
+    fun updateImages(updatedItems: List<ImageItem>, disk: Boolean = false, onError: (Exception) -> Unit) {
         if (updatedItems.isEmpty()) return
 
         // Create a map for O(1) lookups during the list traversal
@@ -112,6 +109,11 @@ class ImageRepository(
             list.map { existing ->
                 // If we have an update for this ID, use it; otherwise keep existing
                 updatesMap[existing.id] ?: existing
+            }
+        }
+        if (disk){
+            updatedItems.forEach { image ->
+                saveMetadataToDisk(image, onError)
             }
         }
     }
@@ -139,6 +141,17 @@ class ImageRepository(
         }
     }
 
-    // TODO: Add actual disk persistence here later
-    // suspend fun saveMetadataToDisk(image: ImageItem) { ... }
+
+     private fun saveMetadataToDisk(image: ImageItem, onError: (Exception) -> Unit) {
+        MetadataWriter.save(
+            file = image.metadata.path,
+            metadata = image.metadata,
+            options = SaveOptions(
+                embedInFile = settingsRepository.settings.value.system.autoSaveToExif,
+                createSidecar = settingsRepository.settings.value.system.writeXmp,
+                strictFallback = true
+            ),
+            onError = onError
+        )
+     }
 }
