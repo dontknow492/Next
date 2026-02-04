@@ -6,14 +6,7 @@ import com.ghost.tagger.data.models.settings.SettingsManager
 import com.ghost.tagger.data.models.settings.SettingsValidator
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.debounce
-import kotlinx.coroutines.flow.drop
-import kotlinx.coroutines.flow.launchIn
-import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.*
 
 @OptIn(FlowPreview::class)
 class SettingsRepository(
@@ -47,7 +40,7 @@ class SettingsRepository(
 
     }
 
-    fun updateSessionSettings(transform: SessionState){
+    fun updateSessionSettings(transform: SessionState) {
         _settings.update {
             it.copy(session = transform)
         }

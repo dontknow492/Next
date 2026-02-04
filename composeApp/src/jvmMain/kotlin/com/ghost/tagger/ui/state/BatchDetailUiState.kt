@@ -10,7 +10,7 @@ data class BatchDetailUiState(
     val progressTotal: Int = 0,
     val error: String? = null,
     val isSaving: Boolean = false,
-){
+) {
     val totalSize: String
         get() {
             val totalBytes = selectedImages.sumOf { it.metadata.fileSizeBytes }

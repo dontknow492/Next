@@ -6,12 +6,8 @@ import com.ghost.tagger.core.downloader.FileValidationResult
 import com.ghost.tagger.core.onnx.SmilingWolfTaggerModel
 import com.ghost.tagger.core.onnx.`interface`.HuggingFaceTaggerModel
 import com.ghost.tagger.data.models.settings.AppSettings
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import java.io.File
 
 object ModelManager {
@@ -78,8 +74,8 @@ object ModelManager {
         currentModelsRootPath = newPathString
         lastKnownPath = newPathString
 
-        if(lastModelId == null && settings.tagger.lastModelId.isNotBlank()){
-            withContext(Dispatchers.IO){
+        if (lastModelId == null && settings.tagger.lastModelId.isNotBlank()) {
+            withContext(Dispatchers.IO) {
                 selectModel(settings.tagger.lastModelId)
                 lastModelId = settings.tagger.lastModelId
             }

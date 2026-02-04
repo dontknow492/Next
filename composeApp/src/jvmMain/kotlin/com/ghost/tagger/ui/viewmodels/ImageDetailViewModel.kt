@@ -5,19 +5,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import co.touchlab.kermit.Logger
 import com.ghost.tagger.core.ModelManager
-import com.ghost.tagger.data.enums.TagSource
 import com.ghost.tagger.data.models.ImageItem
 import com.ghost.tagger.data.models.ImageTag
 import com.ghost.tagger.data.repository.ImageRepository
 import com.ghost.tagger.data.repository.SettingsRepository
 import com.ghost.tagger.ui.actions.DetailAction
 import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.*
 import java.awt.Desktop
 import java.io.File
 
@@ -253,7 +247,7 @@ class ImageDetailViewModel(
                         }
 
                     // 4. Final Sorting and Limiting
-                // Sort the entire list so that the most important tags stay within maxTags limit
+                    // Sort the entire list so that the most important tags stay within maxTags limit
                     processedTags
                         .sortedWith(
                             compareByDescending<ImageTag> { it.source.priority() }
@@ -311,7 +305,11 @@ class ImageDetailViewModel(
         Logger.i("Saving metadata for ${image.name}...")
         viewModelScope.launch(Dispatchers.IO) {
             _uiState.update { it.copy(isSaving = true) }
-            imageRepository.updateImage(image.copy(metadata = image.metadata.copy(lastModified = System.currentTimeMillis())), disk = disk, onError = ::onError)
+            imageRepository.updateImage(
+                image.copy(metadata = image.metadata.copy(lastModified = System.currentTimeMillis())),
+                disk = disk,
+                onError = ::onError
+            )
             _uiState.update { it.copy(isSaving = false, dataModified = !disk) }
         }
     }

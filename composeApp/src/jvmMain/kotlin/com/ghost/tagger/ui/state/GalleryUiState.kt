@@ -1,9 +1,9 @@
 package com.ghost.tagger.ui.state
 
-import com.ghost.tagger.data.models.ImageItem
 import com.ghost.tagger.data.enums.GalleryMode
 import com.ghost.tagger.data.enums.SortBy
 import com.ghost.tagger.data.enums.SortOrder
+import com.ghost.tagger.data.models.ImageItem
 import com.ghost.tagger.data.models.settings.DirectorySettings
 import java.io.File
 

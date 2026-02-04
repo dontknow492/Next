@@ -1,19 +1,15 @@
 package com.ghost.tagger.ui.section
 
-import androidx.compose.animation.*
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.Label
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -21,24 +17,23 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.ghost.tagger.ui.actions.DetailAction
 import com.ghost.tagger.data.models.ImageItem
 import com.ghost.tagger.data.models.ImageTag
+import com.ghost.tagger.ui.actions.DetailAction
 import com.ghost.tagger.ui.components.ImageView
-import com.ghost.tagger.ui.viewmodels.ImageDetailViewModel
 import com.ghost.tagger.ui.components.TagsSection
+import com.ghost.tagger.ui.viewmodels.ImageDetailViewModel
 import org.koin.compose.viewmodel.koinViewModel
 
 
 @Composable
 fun ImageDetailPreview(
     modifier: Modifier = Modifier,
-    onClose: ()->Unit,
+    onClose: () -> Unit,
 //    actions: (DetailAction) -> Unit
 ) {
     val viewModel: ImageDetailViewModel = koinViewModel()
@@ -46,62 +41,60 @@ fun ImageDetailPreview(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     // Scroll state for the whole panel
     val scrollState = rememberScrollState()
-    if(uiState.activeImage != null){
+    if (uiState.activeImage != null) {
         Row {
-        VerticalDivider()
-        Column(
-            modifier = modifier
-                .fillMaxSize()
-                .background(MaterialTheme.colorScheme.surface)
-                .verticalScroll(scrollState)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(24.dp)
-        ) {
-            // 1. Aesthetic Image Header (With Floating Badges)
-            ImageHeader(uiState.activeImage!!, viewModel::handleAction, onClose)
+            VerticalDivider()
+            Column(
+                modifier = modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.surface)
+                    .verticalScroll(scrollState)
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(24.dp)
+            ) {
+                // 1. Aesthetic Image Header (With Floating Badges)
+                ImageHeader(uiState.activeImage!!, viewModel::handleAction, onClose)
 
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
 
-            // 2. Metadata Grid (Quick Stats)
-            MetadataGrid(uiState.activeImage!!)
+                // 2. Metadata Grid (Quick Stats)
+                MetadataGrid(uiState.activeImage!!)
 
-            // 3. Description Editor
-            DescriptionSection(
-                description = uiState.activeImage!!.metadata.description ?: "",
-                onUpdate = { viewModel.handleAction(DetailAction.UpdateDescription(it)) }
-            )
-
-            // 4. Tags Management (The Complex Part)
-            TagsSection(
-                title = "Tags",
-                tags = uiState.activeImage!!.metadata.tags,
-                onRemove = { viewModel.handleAction(DetailAction.RemoveTag(it)) },
-                onAdd = { viewModel.handleAction(DetailAction.AddTag(it)) },
-                onClear = { viewModel.handleAction(DetailAction.ClearTags) },
-            )
-            Spacer(Modifier.height(8.dp))
-            Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp)) {
-                GenerateAction(
-                    isTagging = uiState.activeImage!!.isTagging,
-                    onGenerate = { viewModel.handleAction(DetailAction.GenerateTags) }
+                // 3. Description Editor
+                DescriptionSection(
+                    description = uiState.activeImage!!.metadata.description ?: "",
+                    onUpdate = { viewModel.handleAction(DetailAction.UpdateDescription(it)) }
                 )
 
-                if(uiState.dataModified){
-                    Spacer(Modifier.height(8.dp))
-                    SaveAction(
-                        onSave = { viewModel.handleAction(DetailAction.SaveMetadata) },
-                        isSaving = uiState.isSaving
+                // 4. Tags Management (The Complex Part)
+                TagsSection(
+                    title = "Tags",
+                    tags = uiState.activeImage!!.metadata.tags,
+                    onRemove = { viewModel.handleAction(DetailAction.RemoveTag(it)) },
+                    onAdd = { viewModel.handleAction(DetailAction.AddTag(it)) },
+                    onClear = { viewModel.handleAction(DetailAction.ClearTags) },
+                )
+                Spacer(Modifier.height(8.dp))
+                Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp)) {
+                    GenerateAction(
+                        isTagging = uiState.activeImage!!.isTagging,
+                        onGenerate = { viewModel.handleAction(DetailAction.GenerateTags) }
                     )
+
+                    if (uiState.dataModified) {
+                        Spacer(Modifier.height(8.dp))
+                        SaveAction(
+                            onSave = { viewModel.handleAction(DetailAction.SaveMetadata) },
+                            isSaving = uiState.isSaving
+                        )
+                    }
+
                 }
 
+                Spacer(Modifier.height(40.dp)) // Bottom Padding
             }
-
-            Spacer(Modifier.height(40.dp)) // Bottom Padding
         }
     }
-    }
-
-
 
 
 }

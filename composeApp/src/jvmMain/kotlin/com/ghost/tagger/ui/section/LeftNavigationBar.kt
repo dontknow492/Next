@@ -6,12 +6,12 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.width
-import androidx.compose.material3.NavigationRail
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Api
 import androidx.compose.material.icons.rounded.ArrowBackIosNew
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.NavigationRail
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -19,9 +19,9 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ghost.tagger.data.enums.ThemeMode
-import com.ghost.tagger.ui.viewmodels.TaggerViewModel
 import com.ghost.tagger.ui.components.DownloadSidebarItem
 import com.ghost.tagger.ui.components.ToggleThemeButton
+import com.ghost.tagger.ui.viewmodels.TaggerViewModel
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
@@ -38,7 +38,7 @@ fun LeftNavigationBar(
 
 
     val arrowRotation by animateFloatAsState(
-        targetValue = if(isSettingVisible) 0f else 180f,
+        targetValue = if (isSettingVisible) 0f else 180f,
         label = "Setting Arrow Rotation",
         animationSpec = tween(durationMillis = 300, easing = LinearOutSlowInEasing)
     )
@@ -51,7 +51,7 @@ fun LeftNavigationBar(
         // ... Top items (Gallery, Settings, etc.) ...
         IconButton(
             onClick = onSettingClick,
-        ){
+        ) {
             Icon(
                 imageVector = Icons.Rounded.ArrowBackIosNew,
                 contentDescription = "Setting Button",
@@ -61,7 +61,7 @@ fun LeftNavigationBar(
 
         IconButton(
             onClick = onApiClick,
-        ){
+        ) {
             Icon(
                 imageVector = Icons.Rounded.Api,
                 contentDescription = "Hugging face Api Button",

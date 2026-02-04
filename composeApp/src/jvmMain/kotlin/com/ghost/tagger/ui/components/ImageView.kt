@@ -40,7 +40,8 @@ fun ImageView(
                 // Only set size if we have valid dimensions
                 // This forces Coil to generate a NEW cache key when size changes significantly
                 if (widthPx > 0 && widthPx != Int.MAX_VALUE &&
-                    heightPx > 0 && heightPx != Int.MAX_VALUE) {
+                    heightPx > 0 && heightPx != Int.MAX_VALUE
+                ) {
                     size(widthPx, heightPx)
                 }
             }

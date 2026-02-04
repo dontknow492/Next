@@ -79,8 +79,14 @@ object MetadataReader {
 
             // 3. Content (Description & Tags) - THE MERGE LOGIC
             // Strategy: Sidecar overrides Image if present.
-            val (embDesc, embTags) = if (embeddedMetadata != null) extractContentMetadata(embeddedMetadata) else Pair(null, emptyList())
-            val (sideDesc, sideTags) = if (sidecarMetadata != null) extractContentMetadata(sidecarMetadata) else Pair(null, emptyList())
+            val (embDesc, embTags) = if (embeddedMetadata != null) extractContentMetadata(embeddedMetadata) else Pair(
+                null,
+                emptyList()
+            )
+            val (sideDesc, sideTags) = if (sidecarMetadata != null) extractContentMetadata(sidecarMetadata) else Pair(
+                null,
+                emptyList()
+            )
 
             // Description: Sidecar > Embedded
             val finalDescription = if (!sideDesc.isNullOrBlank()) sideDesc else embDesc
@@ -135,8 +141,13 @@ object MetadataReader {
             val xmpMeta = dir.xmpMeta
             try {
                 // 1. Get Description (dc:description)
-                if (description == null && xmpMeta.doesPropertyExist("http://purl.org/dc/elements/1.1/", "description")) {
-                    val item = xmpMeta.getLocalizedText("http://purl.org/dc/elements/1.1/", "description", null, "x-default")
+                if (description == null && xmpMeta.doesPropertyExist(
+                        "http://purl.org/dc/elements/1.1/",
+                        "description"
+                    )
+                ) {
+                    val item =
+                        xmpMeta.getLocalizedText("http://purl.org/dc/elements/1.1/", "description", null, "x-default")
                     if (!item.value.isNullOrBlank()) description = item.value
                 }
 

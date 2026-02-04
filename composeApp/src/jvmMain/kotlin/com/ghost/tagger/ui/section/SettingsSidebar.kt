@@ -1,23 +1,15 @@
 package com.ghost.tagger.ui.section
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.animation.*
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
@@ -29,11 +21,11 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ghost.tagger.data.models.settings.ModelType
 import com.ghost.tagger.data.models.settings.TaggerSettings
-import com.ghost.tagger.ui.viewmodels.SettingsViewModel
-import com.ghost.tagger.ui.viewmodels.TaggerViewModel
 import com.ghost.tagger.ui.components.ModelSelector
 import com.ghost.tagger.ui.components.TagsSection
 import com.ghost.tagger.ui.components.rememberDirectoryPicker
+import com.ghost.tagger.ui.viewmodels.SettingsViewModel
+import com.ghost.tagger.ui.viewmodels.TaggerViewModel
 import org.koin.compose.viewmodel.koinViewModel
 import java.io.File
 
@@ -62,64 +54,64 @@ fun SettingsSidebar() {
         )
     ) {
         Surface(
-        modifier = Modifier.width(settings.session.sidePanelWidthDp.dp).fillMaxHeight(),
-        color = MaterialTheme.colorScheme.surface, // Clean background
-        tonalElevation = 1.dp, // Slight separation from gallery
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
-    ) {
-        Column(
-            modifier = Modifier
-                .padding(16.dp)
-                .verticalScroll(rememberScrollState()), // Make it scrollable
-            verticalArrangement = Arrangement.spacedBy(24.dp)
+            modifier = Modifier.width(settings.session.sidePanelWidthDp.dp).fillMaxHeight(),
+            color = MaterialTheme.colorScheme.surface, // Clean background
+            tonalElevation = 1.dp, // Slight separation from gallery
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
         ) {
-            // Header
-            Text(
-                text = "Model Configuration",
-                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                color = MaterialTheme.colorScheme.onSurface
-            )
-
-            PathSelector(
-                label = "Model Download Folder",
-                path = settings.modelDownloadPath,
-                onFolderClick = {},
-                onClick = openDir,
-            )
-
-            // 2. Mode Switcher (Tagger vs Descriptor)
-            // Intuition: Changing this creates a "New Context" for the user
-            SingleChoiceSegmentedButton(
-                selected = settings.lastModelType,
-                onSelect = { viewModel.setModelType(it) }
-            )
-
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(0.5f))
-
-            // 3. Dynamic Content Section
-            // We use AnimatedVisibility for a smooth "Slide" feel when switching modes
-            AnimatedVisibility(
-                visible = settings.lastModelType == ModelType.TAGGER,
-                enter = fadeIn() + expandVertically(),
-                exit = fadeOut() + shrinkVertically()
+            Column(
+                modifier = Modifier
+                    .padding(16.dp)
+                    .verticalScroll(rememberScrollState()), // Make it scrollable
+                verticalArrangement = Arrangement.spacedBy(24.dp)
             ) {
-                TaggerSettingsSection(viewModel, settings.tagger)
+                // Header
+                Text(
+                    text = "Model Configuration",
+                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+
+                PathSelector(
+                    label = "Model Download Folder",
+                    path = settings.modelDownloadPath,
+                    onFolderClick = {},
+                    onClick = openDir,
+                )
+
+                // 2. Mode Switcher (Tagger vs Descriptor)
+                // Intuition: Changing this creates a "New Context" for the user
+                SingleChoiceSegmentedButton(
+                    selected = settings.lastModelType,
+                    onSelect = { viewModel.setModelType(it) }
+                )
+
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(0.5f))
+
+                // 3. Dynamic Content Section
+                // We use AnimatedVisibility for a smooth "Slide" feel when switching modes
+                AnimatedVisibility(
+                    visible = settings.lastModelType == ModelType.TAGGER,
+                    enter = fadeIn() + expandVertically(),
+                    exit = fadeOut() + shrinkVertically()
+                ) {
+                    TaggerSettingsSection(viewModel, settings.tagger)
+                }
+
+                AnimatedVisibility(
+                    visible = settings.lastModelType == ModelType.DESCRIPTOR,
+                    enter = fadeIn() + expandVertically(),
+                    exit = fadeOut() + shrinkVertically()
+                ) {
+                    DescriptorSettingsSection(viewModel, settings.descriptor)
+                }
+
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(0.5f))
+
+                // 4. Global System Settings (Always visible)
+                SystemSettingsSection(viewModel, settings.system)
             }
-
-            AnimatedVisibility(
-                visible = settings.lastModelType == ModelType.DESCRIPTOR,
-                enter = fadeIn() + expandVertically(),
-                exit = fadeOut() + shrinkVertically()
-            ) {
-                DescriptorSettingsSection(viewModel, settings.descriptor)
-            }
-
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(0.5f))
-
-            // 4. Global System Settings (Always visible)
-            SystemSettingsSection(viewModel, settings.system)
         }
-    }
     }
 
 
@@ -179,7 +171,10 @@ fun TaggerSettingsSection(viewModel: SettingsViewModel, settings: TaggerSettings
 }
 
 @Composable
-fun DescriptorSettingsSection(viewModel: SettingsViewModel, settings: com.ghost.tagger.data.models.settings.DescriptorSettings) {
+fun DescriptorSettingsSection(
+    viewModel: SettingsViewModel,
+    settings: com.ghost.tagger.data.models.settings.DescriptorSettings
+) {
     Column(verticalArrangement = Arrangement.spacedBy(20.dp)) {
         SectionHeader("Generation Settings", Icons.Rounded.AutoAwesome)
 
@@ -218,7 +213,10 @@ fun DescriptorSettingsSection(viewModel: SettingsViewModel, settings: com.ghost.
 }
 
 @Composable
-fun SystemSettingsSection(viewModel: SettingsViewModel, settings: com.ghost.tagger.data.models.settings.SystemSettings) {
+fun SystemSettingsSection(
+    viewModel: SettingsViewModel,
+    settings: com.ghost.tagger.data.models.settings.SystemSettings
+) {
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         SectionHeader("System & Performance", Icons.Rounded.Memory)
 
@@ -335,7 +333,11 @@ fun SwitchSetting(label: String, checked: Boolean, onCheckedChange: (Boolean) ->
         Column(modifier = Modifier.weight(1f)) {
             Text(label, style = MaterialTheme.typography.bodyMedium)
             if (description != null) {
-                Text(description, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(
+                    description,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
         }
         Switch(checked = checked, onCheckedChange = onCheckedChange, modifier = Modifier.scale(0.8f))
@@ -367,7 +369,7 @@ fun PathSelector(
                     modifier = Modifier.weight(1f),
                     maxLines = 1
                 )
-                IconButton(onClick = onFolderClick, modifier = Modifier){
+                IconButton(onClick = onFolderClick, modifier = Modifier) {
                     Icon(Icons.Rounded.FolderOpen, null, modifier = Modifier.size(16.dp).padding(0.dp))
                 }
 

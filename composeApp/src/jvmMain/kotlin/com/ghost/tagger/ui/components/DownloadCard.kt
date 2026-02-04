@@ -4,25 +4,21 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Download
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.ProgressIndicatorDefaults
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
-import com.ghost.tagger.data.models.DownloadStatus
-
-import androidx.compose.ui.window.Popup
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
 import com.ghost.tagger.core.downloader.DownloadState
+import com.ghost.tagger.data.models.DownloadStatus
 
 // Import your data classes
 //import com.ghost.tagger.core.DownloadStatus
@@ -81,8 +77,8 @@ fun DownloadStatusCard(
                 LinearProgressIndicator(
                     progress = { animatedProgress },
                     modifier = Modifier
-                                            .fillMaxWidth()
-                                            .height(6.dp),
+                        .fillMaxWidth()
+                        .height(6.dp),
                     color = MaterialTheme.colorScheme.primary,
                     trackColor = ProgressIndicatorDefaults.linearTrackColor,
                     strokeCap = ProgressIndicatorDefaults.LinearStrokeCap,
@@ -127,19 +123,18 @@ fun DownloadStatusCard(
 fun IdleDownloadStatusCard(
     modifier: Modifier = Modifier,
     content: @Composable () -> Unit = {}
-){
+) {
     Card(
         elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.onSurfaceVariant),
         modifier = modifier
-    ){
+    ) {
         Column(modifier = Modifier.padding(16.dp)) {
             content.invoke()
         }
     }
 }
-
 
 
 @Composable
@@ -192,21 +187,22 @@ fun DownloadSidebarItem(
 
         // --- The Popup ---
         if (isPopupOpen) {
-             Popup(
-                 alignment = Alignment.TopEnd,
-                 offset = IntOffset(x = 340, y = -100), // Adjust 'x' based on your sidebar width!
-                 onDismissRequest = { isPopupOpen = false },
-                 properties = PopupProperties(focusable = true, dismissOnClickOutside = true),
-             ){
+            Popup(
+                alignment = Alignment.TopEnd,
+                offset = IntOffset(x = 340, y = -100), // Adjust 'x' based on your sidebar width!
+                onDismissRequest = { isPopupOpen = false },
+                properties = PopupProperties(focusable = true, dismissOnClickOutside = true),
+            ) {
                 when (downloadState) {
                     is DownloadState.Downloading -> {
                         DownloadStatusCard(
                             modelName = activeModelName,
-                            status = downloadState.status ,
+                            status = downloadState.status,
                             isDownloading = true,
                             onCancel = { /* Cancel logic */ }
                         )
                     }
+
                     is DownloadState.Idle -> {
                         IdleDownloadStatusCard {
                             Text(
@@ -217,6 +213,7 @@ fun DownloadSidebarItem(
                             )
                         }
                     }
+
                     is DownloadState.Error -> {
                         IdleDownloadStatusCard {
                             Text(
@@ -228,6 +225,7 @@ fun DownloadSidebarItem(
                             )
                         }
                     }
+
                     is DownloadState.Success -> {
                         DownloadStatusCard(
                             modelName = activeModelName,
@@ -246,7 +244,7 @@ fun DownloadSidebarItem(
                     }
 
 
-    }
+                }
             }
         }
     }

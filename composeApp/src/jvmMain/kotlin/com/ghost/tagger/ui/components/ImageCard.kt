@@ -22,18 +22,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.PointerEventType
-import androidx.compose.ui.input.pointer.isCtrlPressed
-import androidx.compose.ui.input.pointer.isMetaPressed
-import androidx.compose.ui.input.pointer.isShiftPressed
-import androidx.compose.ui.input.pointer.onPointerEvent
-import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.*
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.ghost.tagger.data.models.ImageItem
-
 
 
 @Composable
@@ -44,7 +38,6 @@ fun DragHandle() {
         modifier = Modifier.padding(2.dp).size(18.dp)
     )
 }
-
 
 
 @OptIn(ExperimentalComposeUiApi::class)
@@ -68,56 +61,56 @@ fun LandscapeImageCard(
 //    val boundsTransform = BoundsTransform { _, _ ->
 //        spring(stiffness = Spring.StiffnessLow, visibilityThreshold = 0.001f)
 //    }
-    with(sharedTransitionScope){
+    with(sharedTransitionScope) {
         Surface(
-        modifier = modifier
-            .fillMaxWidth()
-            .pointerInput(Unit) {
-                awaitPointerEventScope {
-                    while (true) {
-                        val event = awaitPointerEvent()
-                        val change = event.changes.first()
+            modifier = modifier
+                .fillMaxWidth()
+                .pointerInput(Unit) {
+                    awaitPointerEventScope {
+                        while (true) {
+                            val event = awaitPointerEvent()
+                            val change = event.changes.first()
 
-                        // CRITICAL FIX:
-                        // If the Checkbox was clicked, it "consumed" this event.
-                        // We stop here so the Column doesn't override the Checkbox logic.
-                        if (change.isConsumed) {
-                            continue
-                        }
+                            // CRITICAL FIX:
+                            // If the Checkbox was clicked, it "consumed" this event.
+                            // We stop here so the Column doesn't override the Checkbox logic.
+                            if (change.isConsumed) {
+                                continue
+                            }
 
-                        if (event.type == PointerEventType.Press) {
-                            val config = event.keyboardModifiers
-                            val isCtrl = config.isCtrlPressed || config.isMetaPressed
-                            val isShift = config.isShiftPressed
+                            if (event.type == PointerEventType.Press) {
+                                val config = event.keyboardModifiers
+                                val isCtrl = config.isCtrlPressed || config.isMetaPressed
+                                val isShift = config.isShiftPressed
 
-                            // This handles the Column click (Simple, Ctrl, or Shift)
-                            onToggleSelection(isCtrl, isShift)
+                                // This handles the Column click (Simple, Ctrl, or Shift)
+                                onToggleSelection(isCtrl, isShift)
 
-                            // We consume this so no parents trigger
-                            change.consume()
+                                // We consume this so no parents trigger
+                                change.consume()
+                            }
                         }
                     }
                 }
-            }
-            .onPointerEvent(PointerEventType.Enter) { isHovered = true }
-            .onPointerEvent(PointerEventType.Exit) { isHovered = false },
-        shape = RoundedCornerShape(12.dp),
-        // Use background colors to reinforce selection state in list view
-        color = when {
-            focused -> MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.4f)
-            selected -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f)
-            isHovered -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-            else -> Color.Transparent
-        },
-        border = BorderStroke(
-            width = 1.dp,
+                .onPointerEvent(PointerEventType.Enter) { isHovered = true }
+                .onPointerEvent(PointerEventType.Exit) { isHovered = false },
+            shape = RoundedCornerShape(12.dp),
+            // Use background colors to reinforce selection state in list view
             color = when {
-                selected -> MaterialTheme.colorScheme.primary
-                focused -> MaterialTheme.colorScheme.secondary
+                focused -> MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.4f)
+                selected -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f)
+                isHovered -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
                 else -> Color.Transparent
-            }
-        ),
-    ) {
+            },
+            border = BorderStroke(
+                width = 1.dp,
+                color = when {
+                    selected -> MaterialTheme.colorScheme.primary
+                    focused -> MaterialTheme.colorScheme.secondary
+                    else -> Color.Transparent
+                }
+            ),
+        ) {
             Row(
                 modifier = Modifier.padding(12.dp),
                 verticalAlignment = Alignment.CenterVertically,
@@ -168,10 +161,10 @@ fun LandscapeImageCard(
                             shape = RoundedCornerShape(8.dp)
                         ) {
                             CircularProgressIndicator(
-                                    modifier = Modifier.align(Alignment.Center).size(20.dp),
-                                    color = Color.White,
-                                    strokeWidth = 2.dp
-                                )
+                                modifier = Modifier.align(Alignment.Center).size(20.dp),
+                                color = Color.White,
+                                strokeWidth = 2.dp
+                            )
                         }
                     }
                 }
@@ -263,59 +256,59 @@ fun ThumbnailCard(
 ) {
 
     var isHovered by remember { mutableStateOf(false) }
-    val boundsTransform = BoundsTransform { _, _ ->
+    BoundsTransform { _, _ ->
         tween(durationMillis = 500, easing = FastOutSlowInEasing)
     }
 //    val sharedState = rememberSharedContentState(key = "item-${item.id}")
-    with(sharedTransitionScope){
+    with(sharedTransitionScope) {
         Column(
-        modifier = modifier
-            .border(
-                BorderStroke(
-                    width = if (focused || selected) 3.dp else 1.dp,
-                    color = when {
-                        selected -> MaterialTheme.colorScheme.primary
-                        focused -> MaterialTheme.colorScheme.secondary
-                        isHovered -> MaterialTheme.colorScheme.outlineVariant
-                        else -> Color.Transparent
-                    }
-                ),
-                shape = RoundedCornerShape(12.dp)
-            )
-            .clip(RoundedCornerShape(12.dp))
-            // Using pointerInput to catch Keyboard Modifiers on Desktop
-            .pointerInput(Unit) {
-            awaitPointerEventScope {
-                while (true) {
-                    val event = awaitPointerEvent()
-                    val change = event.changes.first()
+            modifier = modifier
+                .border(
+                    BorderStroke(
+                        width = if (focused || selected) 3.dp else 1.dp,
+                        color = when {
+                            selected -> MaterialTheme.colorScheme.primary
+                            focused -> MaterialTheme.colorScheme.secondary
+                            isHovered -> MaterialTheme.colorScheme.outlineVariant
+                            else -> Color.Transparent
+                        }
+                    ),
+                    shape = RoundedCornerShape(12.dp)
+                )
+                .clip(RoundedCornerShape(12.dp))
+                // Using pointerInput to catch Keyboard Modifiers on Desktop
+                .pointerInput(Unit) {
+                    awaitPointerEventScope {
+                        while (true) {
+                            val event = awaitPointerEvent()
+                            val change = event.changes.first()
 
-                    // CRITICAL FIX:
-                    // If the Checkbox was clicked, it "consumed" this event.
-                    // We stop here so the Column doesn't override the Checkbox logic.
-                    if (change.isConsumed) {
-                        continue
-                    }
+                            // CRITICAL FIX:
+                            // If the Checkbox was clicked, it "consumed" this event.
+                            // We stop here so the Column doesn't override the Checkbox logic.
+                            if (change.isConsumed) {
+                                continue
+                            }
 
-                    if (event.type == PointerEventType.Press) {
-                        val config = event.keyboardModifiers
-                        val isCtrl = config.isCtrlPressed || config.isMetaPressed
-                        val isShift = config.isShiftPressed
+                            if (event.type == PointerEventType.Press) {
+                                val config = event.keyboardModifiers
+                                val isCtrl = config.isCtrlPressed || config.isMetaPressed
+                                val isShift = config.isShiftPressed
 
-                        // This handles the Column click (Simple, Ctrl, or Shift)
-                        onToggleSelection(isCtrl, isShift)
+                                // This handles the Column click (Simple, Ctrl, or Shift)
+                                onToggleSelection(isCtrl, isShift)
 
-                        // We consume this so no parents trigger
-                        change.consume()
+                                // We consume this so no parents trigger
+                                change.consume()
+                            }
+                        }
                     }
                 }
-            }
-        }
-            .onPointerEvent(PointerEventType.Enter) { isHovered = true }
-            .onPointerEvent(PointerEventType.Exit) { isHovered = false }
-            .padding(8.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
+                .onPointerEvent(PointerEventType.Enter) { isHovered = true }
+                .onPointerEvent(PointerEventType.Exit) { isHovered = false }
+                .padding(8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -365,8 +358,7 @@ fun ThumbnailCard(
                             )
                         }
                     }
-                }
-                else {
+                } else {
                     if (isHovered) {
                         IconButton(
 

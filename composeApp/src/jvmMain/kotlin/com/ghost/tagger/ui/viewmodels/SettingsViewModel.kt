@@ -1,20 +1,15 @@
 package com.ghost.tagger.ui.viewmodels
 
 
-import com.ghost.tagger.data.models.settings.ModelType
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import co.touchlab.kermit.Logger
 import com.ghost.tagger.data.enums.ThemeMode
 import com.ghost.tagger.data.models.ImageTag
 import com.ghost.tagger.data.models.settings.AppSettings
+import com.ghost.tagger.data.models.settings.ModelType
 import com.ghost.tagger.data.repository.SettingsRepository
 import com.ghost.tagger.ui.state.SettingsUiState
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.*
 import java.io.File
 
 class SettingsViewModel(
@@ -43,7 +38,7 @@ class SettingsViewModel(
 
     fun settingsFlow(): Flow<AppSettings> = repository.settings
 
-    fun setModelDownloadPath(path: File){
+    fun setModelDownloadPath(path: File) {
         repository.updateSettings { it.copy(modelDownloadPath = path) }
     }
 
@@ -154,32 +149,31 @@ class SettingsViewModel(
     }
 
 
-
-    fun setPreviewPanelWidth(width: Float){
+    fun setPreviewPanelWidth(width: Float) {
         repository.updateSettings {
             it.copy(session = it.session.copy(previewSectionWidthDp = width))
         }
     }
 
-    fun saveToXmpFile(enabled: Boolean){
+    fun saveToXmpFile(enabled: Boolean) {
         repository.updateSettings {
             it.copy(system = it.system.copy(writeXmp = enabled))
         }
     }
 
-    fun setSideBarWidth(width: Float){
+    fun setSideBarWidth(width: Float) {
         repository.updateSettings {
             it.copy(session = it.session.copy(sidePanelWidthDp = width))
         }
     }
 
-    fun toggleSideBarVisible(){
+    fun toggleSideBarVisible() {
         repository.updateSettings {
             it.copy(session = it.session.copy(isSidebarVisible = it.session.isSidebarVisible.not()))
         }
     }
 
-    fun setThemeMode(mode: ThemeMode){
+    fun setThemeMode(mode: ThemeMode) {
         repository.updateSettings {
             it.copy(themeMode = mode)
         }

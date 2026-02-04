@@ -1,13 +1,14 @@
 package com.ghost.tagger.core
 
+//import io.ktor.client.engine..*
 import co.touchlab.kermit.Logger
 import com.ghost.tagger.data.models.DownloadStatus
 import io.ktor.client.*
-import io.ktor.client.engine.java.Java
-//import io.ktor.client.engine..*
-import io.ktor.client.plugins.* import io.ktor.client.request.*
+import io.ktor.client.engine.java.*
+import io.ktor.client.plugins.*
+import io.ktor.client.request.*
 import io.ktor.client.statement.*
-import io.ktor.http.* // Needed for HttpHeaders and contentLength()
+import io.ktor.http.*
 import io.ktor.utils.io.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -17,7 +18,8 @@ import java.io.File
 
 object KtorDownloadManager {
 
-    val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+    val USER_AGENT =
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 
 
     private val client = HttpClient(Java) {
@@ -87,16 +89,24 @@ object KtorDownloadManager {
                         val speedBytesPerSec = if (timeElapsed > 0) (bytesCopiedTotal * 1000) / timeElapsed else 0
                         val remainingBytes = totalBytes - bytesCopiedTotal
                         val etaMillis = if (speedBytesPerSec > 0) (remainingBytes * 1000) / speedBytesPerSec else 0
-                         Logger.d(
-                            "Progress: $progress, Speed: ${formatSpeed(speedBytesPerSec)}, ETA: ${formatDuration(etaMillis)}"
-                         )
+                        Logger.d(
+                            "Progress: $progress, Speed: ${formatSpeed(speedBytesPerSec)}, ETA: ${
+                                formatDuration(
+                                    etaMillis
+                                )
+                            }"
+                        )
                         emit(
                             DownloadStatus(
                                 progress = progress,
                                 progressPercent = (progress * 100).toInt(),
                                 speed = formatSpeed(speedBytesPerSec),
                                 eta = if (totalBytes > 0L) formatDuration(etaMillis) else "Calculating...",
-                                downloadedText = if (totalBytes > 0L) "${formatSize(bytesCopiedTotal)} / ${formatSize(totalBytes)}" else formatSize(bytesCopiedTotal),
+                                downloadedText = if (totalBytes > 0L) "${formatSize(bytesCopiedTotal)} / ${
+                                    formatSize(
+                                        totalBytes
+                                    )
+                                }" else formatSize(bytesCopiedTotal),
                                 totalBytes = totalBytes,
                                 downloadedBytes = bytesCopiedTotal
                             )
@@ -144,7 +154,10 @@ object KtorDownloadManager {
         return try {
             val response = client.head(url) {
                 // Also add User-Agent here for the size check!
-                header(HttpHeaders.UserAgent, "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+                header(
+                    HttpHeaders.UserAgent,
+                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+                )
             }
             response.headers[HttpHeaders.ContentLength]?.toLong() ?: -1L
         } catch (e: Exception) {

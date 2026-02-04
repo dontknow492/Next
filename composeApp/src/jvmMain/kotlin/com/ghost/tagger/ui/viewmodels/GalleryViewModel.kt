@@ -14,11 +14,7 @@ import com.ghost.tagger.data.repository.ImageRepository
 import com.ghost.tagger.data.repository.SettingsRepository
 import com.ghost.tagger.ui.state.GalleryUiState
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.io.File
 
@@ -116,13 +112,14 @@ class GalleryViewModelV1(
     }
 
     private fun applySort(list: List<ImageItem>, by: SortBy, order: SortOrder): List<ImageItem> {
-        return when(order) {
-            SortOrder.ASCENDING -> when(by) {
+        return when (order) {
+            SortOrder.ASCENDING -> when (by) {
                 SortBy.NAME -> list.sortedBy { it.name }
                 SortBy.DATE -> list.sortedBy { it.metadata.lastModified }
                 SortBy.SIZE -> list.sortedBy { it.metadata.fileSizeBytes }
             }
-            SortOrder.DESCENDING -> when(by) {
+
+            SortOrder.DESCENDING -> when (by) {
                 SortBy.NAME -> list.sortedByDescending { it.name }
                 SortBy.DATE -> list.sortedByDescending { it.metadata.lastModified }
                 SortBy.SIZE -> list.sortedByDescending { it.metadata.fileSizeBytes }
@@ -144,10 +141,10 @@ class GalleryViewModelV1(
             allLoadedImages.filter { item ->
                 // Search by Name
                 item.name.lowercase().contains(lowerQuery) ||
-                // OR Search by Extension
-                item.metadata.extension.lowercase().contains(lowerQuery) ||
-                // OR Search by Tags (Advanced)
-                item.metadata.tags.any { tag -> tag.name.lowercase().contains(lowerQuery) }
+                        // OR Search by Extension
+                        item.metadata.extension.lowercase().contains(lowerQuery) ||
+                        // OR Search by Tags (Advanced)
+                        item.metadata.tags.any { tag -> tag.name.lowercase().contains(lowerQuery) }
             }
         }
 
@@ -228,7 +225,6 @@ class GalleryViewModelV1(
     }
 
 
-
     fun selectAll() {
         val allIds = _uiState.value.images.map { it.id }.toSet()
         _uiState.update { it.copy(selectedIds = allIds) }
@@ -293,7 +289,7 @@ class GalleryViewModelV1(
         // 2. Sync the UI State
         _uiState.update { current ->
             // Filter the UI list as well
-            val newImages = current.images.filter { it.id != id }
+            current.images.filter { it.id != id }
 
             // Cleanup selection and focus
             val newSelected = current.selectedIds - id
@@ -336,7 +332,7 @@ class GalleryViewModelV1(
         lastSelectionAnchorId = null
     }
 
-    private fun updateSort(sortBy: SortBy, sortOrder: SortOrder){
+    private fun updateSort(sortBy: SortBy, sortOrder: SortOrder) {
         val sorted_list = applySort(allLoadedImages, sortBy, sortOrder)
         allLoadedImages.clear()
         allLoadedImages.addAll(sorted_list)
@@ -352,17 +348,17 @@ class GalleryViewModelV1(
         updateSort(uiState.value.sortBy, sortOrder)
     }
 
-    private fun setThumbnailSize(newSize: Float){
+    private fun setThumbnailSize(newSize: Float) {
         settingsRepo.updateSettings { it.copy(session = it.session.copy(minThumbnailSizeDp = newSize)) }
     }
 
-    fun modifyThumbnailSize(increment: Boolean, byPercentage: Float = 0.1f){
+    fun modifyThumbnailSize(increment: Boolean, byPercentage: Float = 0.1f) {
         val current = uiState.value.minThumbnailSizeDp
         val newSize = if (increment) current + (current * byPercentage) else current - (current * byPercentage)
         setThumbnailSize(newSize)
     }
 
-    fun updateAdvanceFolderSettings(settings: DirectorySettings){
+    fun updateAdvanceFolderSettings(settings: DirectorySettings) {
         settingsRepo.updateSettings {
             it.copy(
                 session = it.session.copy(
@@ -377,7 +373,6 @@ class GalleryViewModelV1(
     fun getSelectedImages(): List<ImageItem> {
         return _uiState.value.images.filter { it.id in _uiState.value.selectedIds }
     }
-
 
 
 }
@@ -480,13 +475,14 @@ class GalleryViewModel(
     // ==========================================================
 
     private fun applySort(list: List<ImageItem>, by: SortBy, order: SortOrder): List<ImageItem> {
-        return when(order) {
-            SortOrder.ASCENDING -> when(by) {
+        return when (order) {
+            SortOrder.ASCENDING -> when (by) {
                 SortBy.NAME -> list.sortedBy { it.name }
                 SortBy.DATE -> list.sortedBy { it.metadata.lastModified }
                 SortBy.SIZE -> list.sortedBy { it.metadata.fileSizeBytes }
             }
-            SortOrder.DESCENDING -> when(by) {
+
+            SortOrder.DESCENDING -> when (by) {
                 SortBy.NAME -> list.sortedByDescending { it.name }
                 SortBy.DATE -> list.sortedByDescending { it.metadata.lastModified }
                 SortBy.SIZE -> list.sortedByDescending { it.metadata.fileSizeBytes }
@@ -508,8 +504,8 @@ class GalleryViewModel(
             val lowerQuery = currentSearchQuery.lowercase()
             masterList.filter { item ->
                 item.name.lowercase().contains(lowerQuery) ||
-                item.metadata.extension.lowercase().contains(lowerQuery) ||
-                item.metadata.tags.any { tag -> tag.name.lowercase().contains(lowerQuery) }
+                        item.metadata.extension.lowercase().contains(lowerQuery) ||
+                        item.metadata.tags.any { tag -> tag.name.lowercase().contains(lowerQuery) }
             }
         }
 
@@ -650,7 +646,7 @@ class GalleryViewModel(
         imageRepository.removeImage(id)
 
         _uiState.update { current ->
-             current.copy(
+            current.copy(
                 focusedImageId = if (current.focusedImageId == id) null else current.focusedImageId
             )
         }
@@ -676,17 +672,17 @@ class GalleryViewModel(
         updateUiList()
     }
 
-    private fun setThumbnailSize(newSize: Float){
+    private fun setThumbnailSize(newSize: Float) {
         settingsRepo.updateSettings { it.copy(session = it.session.copy(minThumbnailSizeDp = newSize)) }
     }
 
-    fun modifyThumbnailSize(increment: Boolean, byPercentage: Float = 0.1f){
+    fun modifyThumbnailSize(increment: Boolean, byPercentage: Float = 0.1f) {
         val current = uiState.value.minThumbnailSizeDp
         val newSize = if (increment) current + (current * byPercentage) else current - (current * byPercentage)
         setThumbnailSize(newSize)
     }
 
-    fun updateAdvanceFolderSettings(settings: DirectorySettings){
+    fun updateAdvanceFolderSettings(settings: DirectorySettings) {
         settingsRepo.updateSettings {
             it.copy(
                 session = it.session.copy(

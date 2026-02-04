@@ -1,15 +1,16 @@
 package com.ghost.tagger.core
 
+
 import co.touchlab.kermit.Logger
+import com.ashampoo.kim.Kim
+import com.ashampoo.kim.model.ImageFormat
+import com.ashampoo.kim.model.MetadataUpdate
 import com.ghost.tagger.data.models.ImageMetadata
 import com.ghost.tagger.data.models.SaveOptions
-import org.apache.commons.imaging.formats.jpeg.xmp.JpegXmpRewriter
-import java.io.BufferedOutputStream
 import java.io.File
 import java.io.FileOutputStream
 
-
-object MetadataWriter {
+object MetadataWriterV2 {
 
     /**
      * The Main Function: Decides whether to Embed or use Sidecar
@@ -33,11 +34,12 @@ object MetadataWriter {
 
         // STEP A: Try Embedding (if requested)
         if (effectiveOptions.embedInFile) {
+            // Check if format is supported by Kim
             if (canEmbed(file)) {
                 try {
-                    embedXmp(file, xmpXml)
+                    embedWithKim(file, metadata)
                     embedSuccess = true
-                    println("Success: Embedded metadata in ${file.name}")
+                    Logger.i("Success: Embedded metadata in ${file.name}")
                 } catch (e: Exception) {
                     Logger.e("Failed to embed: ${e.message}")
                     if (!effectiveOptions.strictFallback) {
@@ -45,10 +47,10 @@ object MetadataWriter {
                     }
                 }
             } else {
-                // If specific format embedding isn't supported (e.g. PNG), we don't crash.
-                // We just log/notify and let the Sidecar logic below take over if allowed.
+                // If format isn't supported for embedding, log it and possibly fallback
+                Logger.w("Embedding skipped: Format not supported or file unreadable for ${file.name}")
                 if (!effectiveOptions.strictFallback) {
-                    onError(Exception("File type ${file.extension} does not support embedding (Only JPEG supported)."))
+                    onError(Exception("File type ${file.extension} does not support embedding."))
                 }
             }
         }
@@ -71,37 +73,62 @@ object MetadataWriter {
 
     private fun saveSidecar(file: File, xmpXml: String) {
         // Standard practice: "image.xmp" (Windows) or "image.jpg.xmp" (Darktable)
-        // We'll stick to replacing extension for cleaner Windows usage if strictly sidecar,
-        // but appending .xmp is safer for avoiding name collisions.
-        // Let's use append (.jpg.xmp) as it's the safest 'non-destructive' way.
         val sidecar = File(file.parent, "${file.name}.xmp")
         sidecar.writeText(xmpXml)
     }
 
     private fun canEmbed(file: File): Boolean {
-        // Apache Commons Imaging's JpegXmpRewriter ONLY supports JPEGs.
-        // Other formats (PNG, TIFF) require full re-encoding or different logic,
-        // so we strictly limit embedding to JPEGs for now.
-        return file.extension.lowercase() in setOf("jpg", "jpeg")
+        return try {
+            // Kim.readMetadata expects ByteArray or ByteReader. Passing 'File' directly causes a mismatch.
+            // Using file.readBytes() solves the "Argument type mismatch: actual type is 'File', but 'ByteArray' was expected" error.
+            val metadata = Kim.readMetadata(file.readBytes())
+            val format = metadata?.imageFormat
+
+            // Explicitly whitelist the formats Kim supports writing XMP to
+            format != null && format in setOf(
+                ImageFormat.JPEG,
+                ImageFormat.PNG,
+                ImageFormat.WEBP,
+                ImageFormat.TIFF,
+                ImageFormat.HEIC, // Include if your version of Kim supports it
+                ImageFormat.AVIF  // Include if your version of Kim supports it
+            )
+        } catch (e: Exception) {
+            // If we can't read it, we definitely can't write to it
+            false
+        }
     }
 
-    private fun embedXmp(file: File, xmpXml: String) {
+    private fun embedWithKim(file: File, metadata: ImageMetadata) {
         val tempFile = File(file.parent, "${file.name}.tmp")
-        BufferedOutputStream(FileOutputStream(tempFile)).use { bos ->
-            // This class is specifically for JPEG structure rewriting
-            val rewriter = JpegXmpRewriter()
-            rewriter.updateXmpXml(file, bos, xmpXml)
-        }
+        try {
+            // We start with the original file data
+            var currentBytes = file.readBytes()
 
-        if (tempFile.exists() && tempFile.length() > 0) {
-            if (file.exists() && !file.delete()) {
-                throw Exception("Could not delete original file to swap.")
+            // 1. Apply Description update if it exists
+            metadata.description?.let { desc ->
+                // We overwrite currentBytes with the updated version
+                currentBytes = Kim.update(currentBytes, MetadataUpdate.Description(desc))
             }
-            if (!tempFile.renameTo(file)) {
-                throw Exception("Could not rename temp file to original name.")
+
+            // 2. Apply Keywords (Tags) update if they exist
+            if (metadata.tags.isNotEmpty()) {
+                val keywordSet = metadata.tags.map { it.name }.toSet()
+                // Again, we update the latest version of the bytes
+                currentBytes = Kim.update(currentBytes, MetadataUpdate.Keywords(keywordSet))
             }
-        } else {
-            throw Exception("Temp file write failed or was empty.")
+
+            // 3. Write the final 'chained' bytes to the temp file
+            FileOutputStream(tempFile).use { it.write(currentBytes) }
+
+            // Swap the temp file with the original (Standard safe-save pattern)
+            if (tempFile.exists() && tempFile.length() > 0) {
+                if (file.exists() && !file.delete()) throw Exception("Could not delete original file.")
+                if (!tempFile.renameTo(file)) throw Exception("Could not rename temp file.")
+            }
+        } catch (e: Exception) {
+            if (tempFile.exists()) tempFile.delete()
+            throw e
         }
     }
 
@@ -110,7 +137,6 @@ object MetadataWriter {
         val sb = StringBuilder()
 
         // 1. Processing Instruction (Packet Wrapper)
-        // Critical for Sidecar files to be recognized by Adobe/Windows
         sb.append("<?xpacket begin=\"\uFEFF\" id=\"W5M0MpCehiHzreSzNTczkc9d\"?>")
 
         // 2. XMP Header
@@ -118,7 +144,6 @@ object MetadataWriter {
         sb.append("""<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">""")
 
         // 3. Main Description Block
-        // Note: We add 'exif' namespace for UserComment compatibility
         sb.append(
             """<rdf:Description rdf:about="" 
             xmlns:dc="http://purl.org/dc/elements/1.1/" 
@@ -126,14 +151,13 @@ object MetadataWriter {
             xmlns:ghost="http://ghost.tagger/1.0/">"""
         )
 
-        // A. Description (dc:description) - Standard XMP
+        // A. Description (dc:description)
         if (!meta.description.isNullOrBlank()) {
             sb.append("<dc:description><rdf:Alt>")
             sb.append("<rdf:li xml:lang=\"x-default\">${escapeXml(meta.description.trim())}</rdf:li>")
             sb.append("</rdf:Alt></dc:description>")
 
-            // A2. Description Fallback (exif:UserComment) - BETTER COMPATIBILITY
-            // Windows Explorer often looks here for "Comments" if it ignores dc:description
+            // A2. Description Fallback (exif:UserComment)
             sb.append("<exif:UserComment><rdf:Alt>")
             sb.append("<rdf:li xml:lang=\"x-default\">${escapeXml(meta.description.trim())}</rdf:li>")
             sb.append("</rdf:Alt></exif:UserComment>")
@@ -166,7 +190,6 @@ object MetadataWriter {
 
         return sb.toString()
     }
-
 
     private fun escapeXml(text: String): String {
         return text.replace("&", "&amp;")

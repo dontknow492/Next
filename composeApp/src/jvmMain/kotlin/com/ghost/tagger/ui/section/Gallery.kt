@@ -4,9 +4,6 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedContentScope
 import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.animation.SharedTransitionScope
-import androidx.compose.foundation.LocalScrollbarStyle
-import androidx.compose.foundation.VerticalScrollbar
-import androidx.compose.foundation.background
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -24,11 +21,13 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.PointerEventType
@@ -42,8 +41,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import co.touchlab.kermit.Logger
 import com.ghost.tagger.data.enums.GalleryMode
 import com.ghost.tagger.data.models.ImageItem
-import com.ghost.tagger.ui.viewmodels.GalleryViewModel
 import com.ghost.tagger.ui.components.*
+import com.ghost.tagger.ui.viewmodels.GalleryViewModel
 import org.koin.compose.viewmodel.koinViewModel
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyGridState
@@ -115,7 +114,7 @@ fun GallerySection(
         DragDropFileBox(
             modifier = Modifier.weight(1.0f),
             onFolderDrop = viewModel::loadDirectory
-        ){
+        ) {
             ImageSection(viewModel = viewModel)
         }
 
@@ -137,6 +136,7 @@ private fun ImageSection(
             is GalleryCommand.Refresh -> {
                 if (uiState.currentDirectory != null) viewModel.loadDirectory(uiState.currentDirectory!!) else Unit
             }
+
             is GalleryCommand.SetViewMode -> viewModel.setViewMode(command.mode)
             is GalleryCommand.ToggleSelection -> viewModel.toggleSelection(
                 command.id,
@@ -168,61 +168,61 @@ private fun ImageSection(
     PullToRefreshBox(
         isRefreshing = uiState.isLoading,
         onRefresh = viewModel::refresh,
-    ){
+    ) {
         SharedTransitionLayout {
-        AnimatedContent(
-            targetState = uiState.viewMode,
-            label = "GalleryModeTransition",
-        ) { targetMode ->
-            Box(modifier = modifier) {
-                when {
-                    // Case 1: No Directory
-                    uiState.currentDirectory == null -> OpenDirectoryPanel(
-                        modifier = Modifier.align(Alignment.Center),
-                        onDirectorySelected = viewModel::loadDirectory
-                    )
+            AnimatedContent(
+                targetState = uiState.viewMode,
+                label = "GalleryModeTransition",
+            ) { targetMode ->
+                Box(modifier = modifier) {
+                    when {
+                        // Case 1: No Directory
+                        uiState.currentDirectory == null -> OpenDirectoryPanel(
+                            modifier = Modifier.align(Alignment.Center),
+                            onDirectorySelected = viewModel::loadDirectory
+                        )
 
-                    // Case 2: Empty Folder
-                    uiState.images.isEmpty() -> EmptyGalleryState(
-                        currentDirectory = uiState.currentDirectory,
-                        onPickNewFolder = openDir
-                    )
+                        // Case 2: Empty Folder
+                        uiState.images.isEmpty() -> EmptyGalleryState(
+                            currentDirectory = uiState.currentDirectory,
+                            onPickNewFolder = openDir
+                        )
 
-                    targetMode == GalleryMode.LANDSCAPE -> LandscapeSection(
-                        modifier = Modifier.fillMaxSize(),
-                        images = uiState.images,
-                        focusedImageId = uiState.focusedImageId,
-                        selectedIds = uiState.selectedIds,
-                        hapticFeedback = hapticFeedback,
-                        sharedTransitionScope = this@SharedTransitionLayout,
-                        animatedContentScope = this@AnimatedContent,
-                        actions = action_map
-                    )
+                        targetMode == GalleryMode.LANDSCAPE -> LandscapeSection(
+                            modifier = Modifier.fillMaxSize(),
+                            images = uiState.images,
+                            focusedImageId = uiState.focusedImageId,
+                            selectedIds = uiState.selectedIds,
+                            hapticFeedback = hapticFeedback,
+                            sharedTransitionScope = this@SharedTransitionLayout,
+                            animatedContentScope = this@AnimatedContent,
+                            actions = action_map
+                        )
 
-                    targetMode == GalleryMode.GRID -> GridSection(
-                        modifier = Modifier.fillMaxSize(),
-                        images = uiState.images,
-                        focusedImageId = uiState.focusedImageId,
-                        minImageDp = uiState.minThumbnailSizeDp.dp,
-                        hapticFeedback = hapticFeedback,
-                        actions = action_map,
-                        sharedTransitionScope = this@SharedTransitionLayout,
-                        animatedContentScope = this@AnimatedContent,
-                        selectedIds = uiState.selectedIds
+                        targetMode == GalleryMode.GRID -> GridSection(
+                            modifier = Modifier.fillMaxSize(),
+                            images = uiState.images,
+                            focusedImageId = uiState.focusedImageId,
+                            minImageDp = uiState.minThumbnailSizeDp.dp,
+                            hapticFeedback = hapticFeedback,
+                            actions = action_map,
+                            sharedTransitionScope = this@SharedTransitionLayout,
+                            animatedContentScope = this@AnimatedContent,
+                            selectedIds = uiState.selectedIds
+                        )
+                    }
+
+                    SelectionOverlay(
+                        modifier = Modifier.align(Alignment.BottomCenter),
+                        selectedCount = uiState.selectedIds.size,
+                        onSelectAll = viewModel::selectAll,
+                        onDeselectAll = viewModel::clearSelection,
+                        onInvert = viewModel::invertSelection,
+                        onRemoveSelected = viewModel::removeSelectedImages
                     )
                 }
-
-                SelectionOverlay(
-                    modifier = Modifier.align(Alignment.BottomCenter),
-                    selectedCount = uiState.selectedIds.size,
-                    onSelectAll = viewModel::selectAll,
-                    onDeselectAll = viewModel::clearSelection,
-                    onInvert = viewModel::invertSelection,
-                    onRemoveSelected = viewModel::removeSelectedImages
-                )
             }
         }
-    }
     }
 
 

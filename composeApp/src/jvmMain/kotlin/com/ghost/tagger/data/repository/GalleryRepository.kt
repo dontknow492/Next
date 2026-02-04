@@ -106,7 +106,7 @@ class GalleryRepository {
                 // Only read metadata if we DON'T have it already
                 if (isNew || isModified) {
                     val meta = MetadataReader.read(file)
-                        val newItem = ImageItem(
+                    val newItem = ImageItem(
                         id = path,
                         name = file.name,
                         metadata = meta.copy(lastModified = lastModified),

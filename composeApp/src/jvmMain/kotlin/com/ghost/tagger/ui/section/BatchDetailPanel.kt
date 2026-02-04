@@ -1,8 +1,5 @@
 package com.ghost.tagger.ui.section
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
@@ -346,8 +343,8 @@ private fun BatchImageStack(images: List<ImageItem>) {
                 1 -> (-12).dp
                 else -> 12.dp
             }
-            val scale = 1f - (realIndex * 0.05f)
-            val opacity = 1f - (realIndex * 0.15f)
+            1f - (realIndex * 0.05f)
+            1f - (realIndex * 0.15f)
 
             Surface(
                 modifier = Modifier

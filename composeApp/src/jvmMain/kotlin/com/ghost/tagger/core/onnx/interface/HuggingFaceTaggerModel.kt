@@ -13,9 +13,6 @@ interface HuggingFaceTaggerModel {
     val rootFolder: File
 
 
-
-
-
     fun download(apiKey: String? = null): Flow<DownloadState>
 
     fun cancelDownload()

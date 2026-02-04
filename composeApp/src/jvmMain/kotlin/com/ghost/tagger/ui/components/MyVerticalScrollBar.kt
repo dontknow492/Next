@@ -1,6 +1,5 @@
 package com.ghost.tagger.ui.components
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.ScrollbarStyle
 import androidx.compose.foundation.VerticalScrollbar
 import androidx.compose.foundation.background
@@ -11,9 +10,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.v2.ScrollbarAdapter
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 
 @Composable
@@ -40,7 +37,7 @@ fun MyVerticalScrollBar(
                 unhoverColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.45f),
                 hoverColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.9f),
 
-            ),
+                ),
             modifier = Modifier.fillMaxHeight()
         )
     }

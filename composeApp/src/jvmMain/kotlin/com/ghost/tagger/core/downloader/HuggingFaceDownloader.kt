@@ -69,7 +69,7 @@ object HuggingFaceDownloader {
             }
 
             Logger.d { "Executing HTTP request for $url" }
-            val response = request.execute() { response ->
+            request.execute { response ->
                 Logger.i { "Received HTTP response: ${response.status} for $url" }
 
                 if (!response.status.isSuccess()) {

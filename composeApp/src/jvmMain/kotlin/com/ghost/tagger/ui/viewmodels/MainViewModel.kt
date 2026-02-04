@@ -4,7 +4,9 @@ package com.ghost.tagger.ui.viewmodels
 import androidx.lifecycle.ViewModel
 import com.ghost.tagger.data.models.ImageItem
 import com.ghost.tagger.data.repository.SettingsRepository
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 
 class MainViewModel(
     private val repository: SettingsRepository

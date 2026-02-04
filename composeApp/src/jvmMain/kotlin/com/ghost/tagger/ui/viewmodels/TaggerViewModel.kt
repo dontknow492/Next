@@ -3,28 +3,22 @@ package com.ghost.tagger.ui.viewmodels
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import co.touchlab.kermit.Logger
-import com.ghost.tagger.data.enums.TagSource
 import com.ghost.tagger.core.ModelManager
 import com.ghost.tagger.core.downloader.DownloadState
 import com.ghost.tagger.core.downloader.FileValidationResult
 import com.ghost.tagger.core.onnx.`interface`.HuggingFaceTaggerModel
+import com.ghost.tagger.data.enums.TagSource
 import com.ghost.tagger.data.models.DownloadStatus
 import com.ghost.tagger.data.models.ImageTag
 import com.ghost.tagger.data.repository.SettingsRepository
 import com.ghost.tagger.ui.state.TaggerUiState
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.io.File
 
 class TaggerViewModel(
     private val settingsRepo: SettingsRepository
-): ViewModel() {
+) : ViewModel() {
     // Expose state to Compose
     private val _uiState = MutableStateFlow(TaggerUiState())
     val uiState: StateFlow<TaggerUiState> = _uiState.asStateFlow()
@@ -44,7 +38,7 @@ class TaggerViewModel(
                 }
             }.catch { error ->
                 // Handle the exception
-                Logger.e("SettingsViewModel", error )
+                Logger.e("SettingsViewModel", error)
             }.collect()
         }
 
@@ -54,13 +48,13 @@ class TaggerViewModel(
                 checkModelStatus()
             }
         }
-}
+    }
 
 
     private suspend fun checkModelStatus() {
         val model = ModelManager.taggerModels.value.find { it.repoId == _uiState.value.selectedModelId }
         val validate = model?.getModelFileValidationResult()
-        if (validate is FileValidationResult.Valid){
+        if (validate is FileValidationResult.Valid) {
             _uiState.update { it.copy(isModelLoaded = true) }
         }
 
@@ -80,9 +74,13 @@ class TaggerViewModel(
 //        val model = ModelManager.taggerModels.value.find { it.id == _uiState.value.selectedModelId } ?: return
 
         viewModelScope.launch {
-            _uiState.update { it.copy(downloadState = DownloadState.Downloading(
-                DownloadStatus(0.5f , 0, "0 B/s", "--", "0 MB / ...", null, 0)
-            ), error = null) }
+            _uiState.update {
+                it.copy(
+                    downloadState = DownloadState.Downloading(
+                        DownloadStatus(0.5f, 0, "0 B/s", "--", "0 MB / ...", null, 0)
+                    ), error = null
+                )
+            }
 
             try {
                 ModelManager.downloadModel(model).collect { status ->
@@ -90,8 +88,12 @@ class TaggerViewModel(
                     _uiState.update { it.copy(downloadState = status) }
                 }
             } catch (e: Exception) {
-                _uiState.update { it.copy(
-                    downloadState = DownloadState.Error("Download failed: ${e.message}"), error = "Download failed: ${e.message}") }
+                _uiState.update {
+                    it.copy(
+                        downloadState = DownloadState.Error("Download failed: ${e.message}"),
+                        error = "Download failed: ${e.message}"
+                    )
+                }
             }
         }
     }
@@ -145,6 +147,7 @@ class TaggerViewModel(
             current.copy(tagger = current.tagger.copy(excludedTags = newList))
         }
     }
+
     fun addExcludedTag(tag: String) {
         val tag = ImageTag(name = tag, source = TagSource.MANUAL)
         settingsRepo.updateSettings { current ->
@@ -170,6 +173,6 @@ class TaggerViewModel(
         viewModelScope.launch {
             ModelManager.openInExplorer(model.repoId)
         }
-        
+
     }
 }

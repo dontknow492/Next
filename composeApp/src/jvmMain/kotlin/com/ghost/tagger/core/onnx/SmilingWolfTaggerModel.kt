@@ -12,7 +12,6 @@ import ai.djl.repository.zoo.Criteria
 import ai.djl.translate.Batchifier
 import ai.djl.translate.Translator
 import ai.djl.translate.TranslatorContext
-import ai.djl.util.Progress
 import co.touchlab.kermit.Logger
 import com.ghost.tagger.core.downloader.DownloadState
 import com.ghost.tagger.core.downloader.FileValidationResult
@@ -144,7 +143,7 @@ class SmilingWolfTaggerModel(
 
     @Synchronized
     override fun load(useGpu: Boolean) {
-        val device = if (Device.gpu() != null && useGpu) {
+        if (Device.gpu() != null && useGpu) {
             Device.gpu()
         } else {
             Device.cpu()
@@ -205,7 +204,6 @@ class SmilingWolfTaggerModel(
     }
 
 
-
     /**
      * Predicts tags for a batch of image files.
      * Efficiently processes multiple images in a single inference pass if the backend supports it.
@@ -239,7 +237,6 @@ class SmilingWolfTaggerModel(
             }
         }
     }
-
 
 
     @Synchronized

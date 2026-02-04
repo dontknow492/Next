@@ -44,8 +44,7 @@ data class TaggerSettings(
     val confidenceThreshold: Float = 0.5f,
     val maxTags: Int = 10,
     val excludedTags: Set<ImageTag> = emptySet()
-) {
-}
+)
 
 @Serializable
 data class DescriptorSettings(

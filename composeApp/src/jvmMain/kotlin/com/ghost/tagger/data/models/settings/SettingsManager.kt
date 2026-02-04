@@ -2,8 +2,8 @@ package com.ghost.tagger.data.models.settings
 
 import kotlinx.serialization.json.Json
 import java.io.File
-import java.util.Base64
 import java.nio.charset.StandardCharsets
+import java.util.*
 
 class SettingsManager(private val appName: String) {
 
@@ -40,7 +40,7 @@ class SettingsManager(private val appName: String) {
         var cleanSettings = SettingsValidator.validateAll(settings)
 
         // Encrypt the API Key if it exists
-        if(cleanSettings.apiKey != null){
+        if (cleanSettings.apiKey != null) {
             val encryptedKey = encrypt(cleanSettings.apiKey)
             cleanSettings = cleanSettings.copy(apiKey = encryptedKey)
         }
@@ -64,7 +64,7 @@ class SettingsManager(private val appName: String) {
                 var settings = SettingsValidator.validateAll(loadedSettings)
 
                 // Decrypt the API Key if it exists
-                if(settings.apiKey != null){
+                if (settings.apiKey != null) {
                     settings = try {
                         val decryptedKey = decrypt(settings.apiKey)
                         settings.copy(apiKey = decryptedKey)

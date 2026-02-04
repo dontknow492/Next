@@ -44,7 +44,7 @@ fun MessageBox(
                         fontWeight = FontWeight.Bold,
                         color = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
                     )
-                    
+
                     Text(
                         text = message,
                         style = MaterialTheme.typography.bodyMedium,
@@ -65,9 +65,9 @@ fun MessageBox(
                     ) {
                         Text(cancelText)
                     }
-                    
+
                     Spacer(modifier = Modifier.width(8.dp))
-                    
+
                     Button(
                         onClick = onConfirm,
                         colors = if (isError) {
