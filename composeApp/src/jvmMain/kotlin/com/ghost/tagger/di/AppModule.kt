@@ -38,6 +38,6 @@ val appModule = module {
     factory { MainViewModel(get()) }
     factory { TaggerViewModel( get() ) }
     factory { ApiKeyViewModel(get()) }
-    factory { ImageDetailViewModel(ModelManager, get()) }
-    factory { BatchDetailViewModel(ModelManager, get()) }
+    factory { ImageDetailViewModel(ModelManager, get(), get()) }
+    factory { BatchDetailViewModel(ModelManager, get(), get()) }
 }

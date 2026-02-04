@@ -1,6 +1,6 @@
 package com.ghost.tagger.data.models
 
-import com.ghost.tagger.TagSource
+import com.ghost.tagger.data.enums.TagSource
 import kotlinx.serialization.Serializable
 
 @Serializable

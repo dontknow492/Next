@@ -20,11 +20,13 @@ interface HuggingFaceTaggerModel {
 
     fun cancelDownload()
 
-    suspend fun load()
+    fun load(useGpu: Boolean = true)
 
     fun close()
 
-    suspend fun predict(file: File): List<ImageTag>
+    fun predict(imageFile: File, threshold: Double = 0.35): List<ImageTag>
+
+    fun predictBatch(imageFiles: List<File>, threshold: Double, internalBatchSize: Int = 8): List<List<ImageTag>>
 
     suspend fun getTagFileValidationResult(apiKey: String? = null): FileValidationResult
 

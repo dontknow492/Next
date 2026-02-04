@@ -101,6 +101,7 @@ kermit = { module = "co.touchlab:kermit", version.ref = "kermit"}
 djl-bom = { module = "ai.djl:bom", version.ref = "djl"}
 djl-api = { module = "ai.djl:api"}
 djl-onnxruntime-engine = { module = "ai.djl.onnxruntime:onnxruntime-engine"}
+djl-pytorch-engine = { module = "ai.djl.pytorch:pytorch-engine"}
 #djl-modality-cv = { module = "ai.djl.modality:cv"}
 
 [plugins]

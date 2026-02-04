@@ -1,6 +1,5 @@
 package com.ghost.tagger.data.models
 
-import com.ghost.tagger.TagSource
 import java.io.File
 
 data class ImageMetadata(

@@ -1,6 +1,7 @@
 package com.ghost.tagger.data.repository
 
 
+import co.touchlab.kermit.Logger
 import com.ghost.tagger.core.MetadataReader
 import com.ghost.tagger.data.models.ImageItem
 import kotlinx.coroutines.Dispatchers
@@ -16,6 +17,7 @@ import java.io.File
  */
 data class ScanDiff(
     val added: List<ImageItem> = emptyList(),
+    val updated: List<ImageItem> = emptyList(),
     val removedIds: Set<String> = emptySet()
 )
 
@@ -26,11 +28,12 @@ class GalleryRepository {
      * Using Flow allows the UI to start showing images immediately,
      * rather than waiting for 10,000 images to finish loading.
      */
+    val CHUNK_SIZE = 50
+
     fun getImages(root: File, recursive: Boolean, maxRecursionDepth: Int): Flow<List<ImageItem>> = flow {
         if (!root.exists() || !root.isDirectory) return@flow
 
         val buffer = mutableListOf<ImageItem>()
-        val CHUNK_SIZE = 50 // Emit updates every 50 images to keep UI responsive
 
         // Recursive walker
         root.walkTopDown()
@@ -78,11 +81,12 @@ class GalleryRepository {
         if (!root.exists() || !root.isDirectory) return@flow
 
         // 1. Create a quick lookup set for existing paths
-        val existingPaths = currentImages.map { it.id }.toSet()
+        val currentMap = currentImages.associateBy { it.id }
         val foundPaths = mutableSetOf<String>()
 
         val addedBuffer = mutableListOf<ImageItem>()
-        val CHUNK_SIZE = 50
+        val updatedBuffer = mutableListOf<ImageItem>()
+
 
         // 2. Walk and Find New Files
         root.walkTopDown()
@@ -92,34 +96,47 @@ class GalleryRepository {
                 val path = file.path
                 foundPaths.add(path) // Mark as found
 
+                val existingItem = currentMap[path]
+                val lastModified = file.lastModified()
+
+                // Logic: Is it new OR has it been modified since we last saw it?
+                val isNew = existingItem == null
+                val isModified = existingItem != null && existingItem.metadata.lastModified != lastModified
+
                 // Only read metadata if we DON'T have it already
-                if (path !in existingPaths) {
+                if (isNew || isModified) {
                     val meta = MetadataReader.read(file)
-                    val item = ImageItem(
+                        val newItem = ImageItem(
                         id = path,
                         name = file.name,
-                        metadata = meta,
+                        metadata = meta.copy(lastModified = lastModified),
                     )
-                    addedBuffer.add(item)
 
-                    if (addedBuffer.size >= CHUNK_SIZE) {
-                        emit(ScanDiff(added = addedBuffer.toList()))
+                    if (isNew) addedBuffer.add(newItem) else updatedBuffer.add(newItem)
+
+                    if (addedBuffer.size + updatedBuffer.size >= CHUNK_SIZE) {
+                        emit(ScanDiff(added = addedBuffer.toList(), updated = updatedBuffer.toList()))
                         addedBuffer.clear()
+                        updatedBuffer.clear()
                     }
                 }
             }
 
         // Emit remaining added files
-        if (addedBuffer.isNotEmpty()) {
-            emit(ScanDiff(added = addedBuffer.toList()))
+        // Final sweep
+        if (addedBuffer.isNotEmpty() || updatedBuffer.isNotEmpty()) {
+            emit(ScanDiff(added = addedBuffer.toList(), updated = updatedBuffer.toList()))
         }
 
         // 3. Calculate Removed Files (Existing - Found)
         // We can only know this after the walk completes
-        val removed = existingPaths - foundPaths
+        // 3. Removed Files
+        val removed = currentMap.keys - foundPaths
         if (removed.isNotEmpty()) {
             emit(ScanDiff(removedIds = removed))
         }
+
+        Logger.i("Refreshed Successfully: Added: ${addedBuffer.size}, Updated: ${updatedBuffer.size}, Removed: ${removed.size}")
 
     }.flowOn(Dispatchers.IO)
 }

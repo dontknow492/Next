@@ -8,14 +8,14 @@ import com.drew.metadata.iptc.IptcDirectory
 import com.drew.metadata.jpeg.JpegDirectory
 import com.drew.metadata.png.PngDirectory
 import com.drew.metadata.xmp.XmpDirectory
-import com.ghost.tagger.TagSource
+import com.ghost.tagger.data.enums.TagSource
 import com.ghost.tagger.data.models.ImageMetadata
 import com.ghost.tagger.data.models.ImageTag
 import java.io.File
 
 object MetadataReader {
 
-    private val SUPPORTED_EXTENSIONS = setOf("jpg", "jpeg", "png", "webp", "bmp")
+    private val SUPPORTED_EXTENSIONS = setOf("jpg", "jpeg", "png", "webp", "bmp", "tiff", "heic", "avif", "jxl")
 
     fun isSupported(file: File): Boolean {
         return file.extension.lowercase() in SUPPORTED_EXTENSIONS

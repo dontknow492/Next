@@ -1,14 +1,12 @@
 package com.ghost.tagger.data.repository
 
-import com.ghost.tagger.core.MetadataWriter
+import com.ghost.tagger.core.MetadataWriterV2
 import com.ghost.tagger.data.models.ImageItem
 import com.ghost.tagger.data.models.SaveOptions
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.io.File
 
@@ -23,7 +21,7 @@ class ImageRepository(
     private val galleryScanner: GalleryRepository,
     private val settingsRepository: SettingsRepository
 ) {
-//    val settings by settingsRepository.settings.collect {  }
+    //    val settings by settingsRepository.settings.collect {  }
     // A scope that lives as long as the app/repository to keep data alive
     private val repoScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
@@ -70,10 +68,18 @@ class ImageRepository(
                     }
 
                     // 2. Add new items
-                    if (diff.added.isNotEmpty()) {
+                    val afterAdditions = if (diff.added.isNotEmpty()) {
                         afterRemovals + diff.added
                     } else {
                         afterRemovals
+                    }
+                    // 3. Update existing item
+                    if (diff.updated.isNotEmpty()) {
+                        afterAdditions.map { existing ->
+                            diff.updated.find { it.id == existing.id } ?: existing
+                        }
+                    } else {
+                        afterAdditions
                     }
                 }
             }
@@ -89,7 +95,7 @@ class ImageRepository(
             // Efficiently replace the item with the matching ID
             list.map { if (it.id == updatedItem.id) updatedItem else it }
         }
-        if (disk){
+        if (disk) {
             saveMetadataToDisk(updatedItem, onError)
         }
     }
@@ -111,7 +117,7 @@ class ImageRepository(
                 updatesMap[existing.id] ?: existing
             }
         }
-        if (disk){
+        if (disk) {
             updatedItems.forEach { image ->
                 saveMetadataToDisk(image, onError)
             }
@@ -125,11 +131,24 @@ class ImageRepository(
         return _images.value.find { it.id == id }
     }
 
+    fun observeImageById(id: String): Flow<ImageItem?> {
+        return _images.map { list ->
+            list.find { it.id == id }
+        }.distinctUntilChanged()
+
+    }
+
+    fun observeImagesByIds(ids: Set<String>): Flow<List<ImageItem>> {
+        return _images.map { list ->
+            list.filter { it.id in ids }
+        }.distinctUntilChanged()
+    }
+
     fun clearImages() {
         _images.value = emptyList()
     }
 
-    fun removeImage(id: String){
+    fun removeImage(id: String) {
         _images.update { list ->
             list.filter { it.id != id }
         }
@@ -142,8 +161,8 @@ class ImageRepository(
     }
 
 
-     private fun saveMetadataToDisk(image: ImageItem, onError: (Exception) -> Unit) {
-        MetadataWriter.save(
+    private fun saveMetadataToDisk(image: ImageItem, onError: (Exception) -> Unit) {
+        MetadataWriterV2.save(
             file = image.metadata.path,
             metadata = image.metadata,
             options = SaveOptions(
@@ -153,5 +172,5 @@ class ImageRepository(
             ),
             onError = onError
         )
-     }
+    }
 }

@@ -5,6 +5,7 @@ import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.*
 import co.touchlab.kermit.Logger
+import com.example.tagger.OnnxImageTagger
 import com.ghost.tagger.core.ModelManager
 import com.ghost.tagger.data.repository.SettingsRepository
 import com.ghost.tagger.di.appModule
@@ -50,4 +51,29 @@ fun main() {
         }
     }
 }
+
+fun main2() {
+       val modelPath = File("D:\\Downloads\\IDM Temp\\SmilingWolf\\wd-v1-4-swinv2-tagger-v2\\model.onnx").toPath()
+       val csvPath = File("D:\\Downloads\\IDM Temp\\SmilingWolf\\wd-v1-4-swinv2-tagger-v2\\selected_tags.csv").toPath()
+
+       OnnxImageTagger(modelPath, csvPath).use { tagger ->
+           // 1. Predict with initial model
+           val tags = tagger.predict(File("D:\\Media\\Image\\test.jpg"))
+
+           // 2. Unload manually if needed (optional, load() handles this automatically)
+           tagger.unload()
+
+           tags.forEach {
+               println(it.name)
+           }
+
+           // 3. Load a different model (e.g., swinv2)
+//           val swinModelPath = File("path/to/wd-swinv2-tagger-v3.onnx").toPath()
+//           tagger.load(swinModelPath)
+//
+//           val tags2 = tagger.predict(File("test_image.png"))
+       }
+   }
+
+
 

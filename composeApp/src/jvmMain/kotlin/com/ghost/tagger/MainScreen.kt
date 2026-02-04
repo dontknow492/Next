@@ -67,11 +67,11 @@ fun MainScreen(
     var isPanelVisible: Boolean by remember(galleryUiState.focusedImageId) { mutableStateOf(galleryUiState.focusedImageId != null)}
 
     LaunchedEffect(galleryUiState.focusedImageId) {
-        imageDetailViewModel.selectImage(galleryUiState.images.firstOrNull { it.id == galleryUiState.focusedImageId } ?: return@LaunchedEffect)
+        imageDetailViewModel.selectImage(galleryUiState.focusedImageId ?: return@LaunchedEffect)
     }
 
     LaunchedEffect(galleryUiState.selectedIds) {
-        batchDetailViewModel.selectImages(galleryViewModel.getSelectedImages())
+        batchDetailViewModel.selectImages(galleryUiState.selectedIds)
     }
 
 

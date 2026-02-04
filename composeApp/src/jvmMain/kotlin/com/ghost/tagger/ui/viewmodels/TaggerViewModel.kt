@@ -3,7 +3,7 @@ package com.ghost.tagger.ui.viewmodels
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import co.touchlab.kermit.Logger
-import com.ghost.tagger.TagSource
+import com.ghost.tagger.data.enums.TagSource
 import com.ghost.tagger.core.ModelManager
 import com.ghost.tagger.core.downloader.DownloadState
 import com.ghost.tagger.core.downloader.FileValidationResult
@@ -12,14 +12,12 @@ import com.ghost.tagger.data.models.DownloadStatus
 import com.ghost.tagger.data.models.ImageTag
 import com.ghost.tagger.data.repository.SettingsRepository
 import com.ghost.tagger.ui.state.TaggerUiState
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.io.File
@@ -74,6 +72,7 @@ class TaggerViewModel(
                 it.copy(tagger = it.tagger.copy(lastModelId = model.repoId))
             }
             checkModelStatus()
+            ModelManager.selectModel(model.repoId)
         }
     }
 

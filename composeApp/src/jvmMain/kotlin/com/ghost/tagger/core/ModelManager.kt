@@ -1,38 +1,27 @@
 package com.ghost.tagger.core
 
-import androidx.lifecycle.viewModelScope
 import co.touchlab.kermit.Logger
 import com.ghost.tagger.core.downloader.DownloadState
 import com.ghost.tagger.core.downloader.FileValidationResult
 import com.ghost.tagger.core.onnx.SmilingWolfTaggerModel
 import com.ghost.tagger.core.onnx.`interface`.HuggingFaceTaggerModel
 import com.ghost.tagger.data.models.settings.AppSettings
-import com.ghost.tagger.data.repository.SettingsRepository
-import com.ghost.tagger.ui.state.SettingsUiState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.launchIn
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.flow.stateIn
-import org.koin.compose.koinInject
+import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
 
 object ModelManager {
 
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+
     // 1. Internal storage for the list using StateFlow
     private val _taggerModels = MutableStateFlow<List<HuggingFaceTaggerModel>>(emptyList())
 
     private val _currentSettings = MutableStateFlow(AppSettings())
-
 
 
     // 2. Public accessor as StateFlow
@@ -43,6 +32,8 @@ object ModelManager {
         private set
 
     private var lastKnownPath: String? = null
+
+    private var lastModelId: String? = null
 
 
     // 4. The Setup Function (Call this once when App starts!)
@@ -57,44 +48,49 @@ object ModelManager {
             .launchIn(scope)
     }
 
-    private fun updateModelsConfiguration(settings: AppSettings) {
-        val newRoot = if (!settings.modelDownloadPath.path.isNullOrBlank()) {
-            settings.modelDownloadPath
-        } else {
-            AppSettings().modelDownloadPath //default
-        }
+    // Add this variable to your class to track the actual root used
+    private var currentModelsRootPath: String? = null
 
-        if (!newRoot.exists()) newRoot.mkdirs()
+    private suspend fun updateModelsConfiguration(settings: AppSettings) {
+        val newRoot = settings.modelDownloadPath.takeIf { it.path.isNotEmpty() }
+            ?: AppSettings().modelDownloadPath
 
         val newPathString = newRoot.absolutePath
 
-        // 🚀 MIGRATION: Detect path change and move files
-        if (lastKnownPath != null && lastKnownPath != newPathString) {
-            val oldRoot = File(lastKnownPath!!)
-            migrateFiles(oldRoot, newRoot)
+        // 1. Check if we actually need to reload
+        if (currentModelsRootPath == newPathString && _taggerModels.value.isNotEmpty()) {
+            return // Path hasn't changed and we already have models. Stop here.
         }
 
-        // If list is empty, create it.
-        // If list exists, just update the root path for existing objects (More efficient!)
-        if (_taggerModels.value.isEmpty()) {
-            _taggerModels.value = createTaggerModelList(newRoot)
-        } else {
-            // Just update the path in place if your classes allow it,
-            // OR recreate them if the path changed.
-            val currentRoot = _taggerModels.value.first().rootFolder
-            if (currentRoot.absolutePath != newRoot.absolutePath) {
-                 Logger.i("📁 Model path changed to: $newRoot. Reloading models.")
-                _taggerModels.value = createTaggerModelList(newRoot)
+        Logger.i("📁 Path changed or init: $newPathString (was: $currentModelsRootPath)")
+
+        // 2. Migration logic
+        if (lastKnownPath != null && lastKnownPath != newPathString) {
+            scope.launch(Dispatchers.IO) {
+                migrateFiles(File(lastKnownPath!!), newRoot)
             }
         }
 
-        // Update tracker for the next cycle
+        // 3. Reload Models
+        _taggerModels.update { createTaggerModelList(newRoot) }
+
+        // 4. Update trackers
+        currentModelsRootPath = newPathString
         lastKnownPath = newPathString
+
+        if(lastModelId == null && settings.tagger.lastModelId.isNotBlank()){
+            withContext(Dispatchers.IO){
+                selectModel(settings.tagger.lastModelId)
+                lastModelId = settings.tagger.lastModelId
+            }
+        }
+
     }
 
     private fun createTaggerModelList(rootDir: File): List<HuggingFaceTaggerModel> {
         // Helper to make the list cleaner
         fun create(repoId: String) = SmilingWolfTaggerModel(repoId, rootModelFolder = rootDir)
+
 
         return listOf(
 
@@ -118,11 +114,11 @@ object ModelManager {
         // 2. Find new one
         val nextModel = _taggerModels.value.find { it.repoId == repoId } ?: return
 
-        Logger.d ("Model ${nextModel.repoId} has been successfully selected $repoId", tag = "ModelManager:selectModel" )
+        Logger.d("Model ${nextModel.repoId} has been successfully selected $repoId", tag = "ModelManager:selectModel")
 
         // 3. Load it (assuming it's downloaded)
         val validation = nextModel.getModelFileValidationResult()
-        if(validation is FileValidationResult.Valid){
+        if (validation is FileValidationResult.Valid) {
             nextModel.load()
             activeModel = nextModel
         }
@@ -139,8 +135,8 @@ object ModelManager {
         model.cancelDownload()
     }
 
-    fun getDefaultTaggerModelId(): String{
-        val default by lazy { _taggerModels.value.firstOrNull()?.repoId ?: "wd-vit-large-tagger-v3"}
+    fun getDefaultTaggerModelId(): String {
+        val default by lazy { _taggerModels.value.firstOrNull()?.repoId ?: "wd-vit-large-tagger-v3" }
         return default
     }
 

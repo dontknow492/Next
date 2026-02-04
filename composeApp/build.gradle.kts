@@ -80,6 +80,7 @@ kotlin {
             implementation(project.dependencies.platform(libs.djl.bom))
             implementation(libs.djl.api)
             implementation(libs.djl.onnxruntime.engine)
+            implementation(libs.djl.pytorch.engine)
 //            implementation(libs.djl.modality.cv)
         }
         commonTest.dependencies {

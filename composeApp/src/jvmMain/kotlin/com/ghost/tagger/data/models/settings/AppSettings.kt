@@ -61,6 +61,7 @@ data class SystemSettings(
     val parallelProcessing: Boolean = false,
     val autoSaveToExif: Boolean = false,
     val writeXmp: Boolean = true,
+    val batchSize: Int = 8,
 )
 
 @Serializable

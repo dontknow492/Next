@@ -5,17 +5,19 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import co.touchlab.kermit.Logger
 import com.ghost.tagger.core.ModelManager
+import com.ghost.tagger.data.enums.TagSource
 import com.ghost.tagger.data.models.ImageItem
 import com.ghost.tagger.data.models.ImageTag
 import com.ghost.tagger.data.repository.ImageRepository
+import com.ghost.tagger.data.repository.SettingsRepository
 import com.ghost.tagger.ui.actions.DetailAction
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.launch
 import java.awt.Desktop
 import java.io.File
 
@@ -31,6 +33,7 @@ data class ImagePreviewUiState(
 class ImageDetailViewModel(
     private val modelManager: ModelManager,
     private val imageRepository: ImageRepository,
+    private val settingsRepository: SettingsRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<ImagePreviewUiState>(ImagePreviewUiState())
@@ -38,14 +41,49 @@ class ImageDetailViewModel(
 
     private var autoSaveJob: Job? = null
 
+    // Track the currently selected ID
+    private val selectedImageId = MutableStateFlow<String?>(null)
+
+    init {
+        observeActiveImage()
+    }
+
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private fun observeActiveImage() {
+        viewModelScope.launch {
+            selectedImageId
+                .flatMapLatest { id ->
+                    if (id == null) {
+                        flowOf(null)
+                    } else {
+                        // Observe the specific image from your repository
+                        imageRepository.observeImageById(id)
+                    }
+                }
+                .collect { image ->
+                    _uiState.update { state ->
+                        state.copy(
+                            activeImage = image,
+                            // If the repo is empty or image is missing,
+                            // we ensure the UI knows there's nothing to show
+                            isPanelVisible = image != null
+                        )
+                    }
+                }
+        }
+    }
 
     /**
      * Call this when a user clicks an image in the gallery
      */
-    fun selectImage(image: ImageItem) {
-        _uiState.update { it.copy(activeImage = image, isPanelVisible = true) }
-//        _activeImage.value = image
-//        _isPanelVisible.value = true
+    fun selectImage(id: String) {
+        selectedImageId.value = id
+    }
+
+    // Optional: clear selection
+    fun clearSelection() {
+        selectedImageId.value = null
     }
 
 
@@ -166,45 +204,90 @@ class ImageDetailViewModel(
 
 
     private fun generateAiTags(image: ImageItem) {
-        val model = modelManager.activeModel
+        // 1. Snapshot settings immediately (Fast, Main Thread)
+        val currentSetting = settingsRepository.settings.value
+        val confidenceThreshold = currentSetting.tagger.confidenceThreshold
+        val maxTags = currentSetting.tagger.maxTags
+
+        // Optimization: Convert exclusions to HashSet for O(1) lookups
+        val excludedTagNames = currentSetting.tagger.excludedTags
+            .map { it.name.lowercase() }
+            .toHashSet()
+
+        val model = modelManager.activeModel // Consider emitting a UI event (e.g. Snackbar) here
         if (model == null) {
-            println("❌ No model selected for generation")
-            // Ideally emit a side-effect/event to show a Snackbar here
+            onError(Exception("No model loaded"))
             return
         }
 
         viewModelScope.launch {
-            // 1. Set Loading State
-            _uiState.update {
-                it.copy(activeImage = it.activeImage?.copy(isTagging = true))
-            }
+            // 2. Set Loading State
+            saveChanges(image.copy(isTagging = false), disk = false)
+            _uiState.update { it.copy(isGenerating = true) }
 
             try {
-                // 2. Run Prediction (Heavy lifting done on IO/Default dispatcher inside model)
-                val file = image.metadata.path
-                val generatedTags = model.predict(file)
+                // 3. Move Heavy Computation to Background (Default Dispatcher)
+                val finalTagList = withContext(Dispatchers.Default) {
+                    val file = image.metadata.path
 
-                // 3. Merge or Replace tags?
-                // Strategy: Keep existing manual tags, append new AI tags that aren't duplicates
-                val currentTagNames = image.metadata.tags.map { it.name.lowercase() }.toSet()
-                val newTags = generatedTags.filter { it.name.lowercase() !in currentTagNames }
-                val combinedTags = image.metadata.tags + newTags
+                    // Heavy Inference Step: Predict tags using AI
+                    val aiPredictions = model.predict(file, confidenceThreshold.toDouble())
 
-                // 4. Update State
+                    // Combine existing tags with AI predictions
+                    val existingTags = image.metadata.tags
+                    val allCandidateTags = existingTags + aiPredictions
+
+                    // Logic:
+                    // 1. Filter out excluded tags
+                    // 2. Group by name to handle duplicates
+                    // 3. For each name, keep the best version (highest priority, then highest confidence)
+                    val processedTags = allCandidateTags
+                        .filter { it.name.lowercase() !in excludedTagNames }
+                        .groupBy { it.name.lowercase() }
+                        .map { (_, tagGroup) ->
+                            // Pick the "best" tag in this group
+                            tagGroup.sortedWith(
+                                compareByDescending<ImageTag> { it.source.priority() }
+                                    .thenByDescending { it.confidence }
+                            ).first()
+                        }
+
+                    // 4. Final Sorting and Limiting
+                // Sort the entire list so that the most important tags stay within maxTags limit
+                    processedTags
+                        .sortedWith(
+                            compareByDescending<ImageTag> { it.source.priority() }
+                                .thenByDescending { it.confidence }
+                        )
+                        .take(maxTags)
+                }
+
+                Logger.d("Tag generated successfully: $finalTagList")
+
+                // 5. Save & Update State (Back on Main Thread)
+                saveChanges(
+                    image.copy(
+                        metadata = image.metadata.copy(tags = finalTagList),
+                        isTagging = false,
+                    ), disk = false
+                )
+
                 _uiState.update {
                     it.copy(
-                        activeImage = it.activeImage?.copy(
-                            isTagging = false,
-                            metadata = it.activeImage.metadata.copy(tags = combinedTags),
-                        ),
                         dataModified = true,
+                        // Explicitly turn off loading here to ensure UI reflects completion
+                        activeImage = it.activeImage?.copy(isTagging = false)
                     )
                 }
+
+            } catch (e: CancellationException) {
+                onError(e)
             } catch (e: Exception) {
                 e.printStackTrace()
-                _uiState.update {
-                    it.copy(activeImage = it.activeImage?.copy(isTagging = false))
-                }
+                // Error State Reset
+                saveChanges(image.copy(isTagging = false), disk = false)
+                _uiState.update { it.copy(isGenerating = false) }
+                onError(e)
             }
         }
     }
@@ -218,7 +301,8 @@ class ImageDetailViewModel(
                     Desktop.getDesktop().browseFileDirectory(path)
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
+                Logger.e("Error opening in explorer: ${e.message}")
+                onError(e)
             }
         }
     }
@@ -227,7 +311,7 @@ class ImageDetailViewModel(
         Logger.i("Saving metadata for ${image.name}...")
         viewModelScope.launch(Dispatchers.IO) {
             _uiState.update { it.copy(isSaving = true) }
-            imageRepository.updateImage(image, disk = disk, onError = ::onError)
+            imageRepository.updateImage(image.copy(metadata = image.metadata.copy(lastModified = System.currentTimeMillis())), disk = disk, onError = ::onError)
             _uiState.update { it.copy(isSaving = false, dataModified = !disk) }
         }
     }
