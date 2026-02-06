@@ -121,6 +121,14 @@ compose.desktop {
                 iconFile.set(project.file("src/jvmMain/composeResources/drawable/icon.ico"))
                 menu = true
                 shortcut = true
+
+                menuGroup = "Next"
+                // **Unique identifier for upgrade/uninstall tracking**
+                upgradeUuid = "12345678-1234-5678-1234-567812345678"
+
+                // **Optional: Customize uninstaller behavior**
+
+
             }
 
             // This "flattens" the drawable folder into the app's resource directory

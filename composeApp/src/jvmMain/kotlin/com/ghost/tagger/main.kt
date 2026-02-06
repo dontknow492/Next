@@ -39,7 +39,6 @@ fun main() {
             state = state
         ) {
             LaunchedEffect(Unit) {
-                delay(1000)
                 getSplashScreen()?.close()
             }
             MainScreen()
