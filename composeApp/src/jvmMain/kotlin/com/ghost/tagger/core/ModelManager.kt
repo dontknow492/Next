@@ -3,6 +3,7 @@ package com.ghost.tagger.core
 import co.touchlab.kermit.Logger
 import com.ghost.tagger.core.downloader.DownloadState
 import com.ghost.tagger.core.downloader.FileValidationResult
+import com.ghost.tagger.core.downloader.HuggingFaceDownloader
 import com.ghost.tagger.core.onnx.SmilingWolfTaggerModel
 import com.ghost.tagger.core.onnx.`interface`.HuggingFaceTaggerModel
 import com.ghost.tagger.data.models.settings.AppSettings
@@ -129,6 +130,10 @@ object ModelManager {
 
     fun cancelDownload(model: HuggingFaceTaggerModel) {
         model.cancelDownload()
+    }
+
+    fun cancelDownloadById(id: String) {
+        HuggingFaceDownloader.cancelDownloadById(id)
     }
 
     fun getDefaultTaggerModelId(): String {

@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -99,6 +100,15 @@ fun DownloadStatusCard(
                         Text("ETA", style = MaterialTheme.typography.labelSmall, color = Color.Gray)
                         Text(status.eta, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
                     }
+                    IconButton(
+                        onClick = onCancel,
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Delete,
+                            contentDescription = "Cancel Download",
+                            tint = MaterialTheme.colorScheme.error
+                        )
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(4.dp))
@@ -108,6 +118,9 @@ fun DownloadStatusCard(
                     modifier = Modifier.align(Alignment.End),
                     color = Color.Gray
                 )
+                Spacer(modifier = Modifier.height(4.dp))
+
+
             } else if (!isDownloading) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Default.CheckCircle, null, tint = Color.Green, modifier = Modifier.size(16.dp))
@@ -140,8 +153,16 @@ fun IdleDownloadStatusCard(
 @Composable
 fun DownloadSidebarItem(
     downloadState: DownloadState,
-    activeModelName: String
+    activeModelName: String,
+    onCancel: () -> Unit,
 ) {
+    val activeModelName = remember(downloadState) {
+        if (downloadState is DownloadState.Downloading) {
+            downloadState.status.id
+        } else {
+            activeModelName
+        }
+    }
     var isPopupOpen by remember { mutableStateOf(false) }
 
     Box {
@@ -199,7 +220,7 @@ fun DownloadSidebarItem(
                             modelName = activeModelName,
                             status = downloadState.status,
                             isDownloading = true,
-                            onCancel = { /* Cancel logic */ }
+                            onCancel = onCancel
                         )
                     }
 
@@ -240,7 +261,7 @@ fun DownloadSidebarItem(
                                 downloadedBytes = 0,
                             ),
                             isDownloading = false,
-                            onCancel = { /* Cancel logic */ }
+                            onCancel = onCancel
                         )
                     }
 

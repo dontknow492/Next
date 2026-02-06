@@ -102,6 +102,14 @@ class TaggerViewModel(
         ModelManager.cancelDownload(model)
     }
 
+    fun cancelDownload() {
+        val downloadState = _uiState.value.downloadState
+        if (downloadState is DownloadState.Downloading) {
+            val id = downloadState.status.id
+            ModelManager.cancelDownloadById(id)
+        }
+    }
+
     fun tagImage(file: File) {
         val model = ModelManager.taggerModels.value.find { it.repoId == _uiState.value.selectedModelId } ?: return
 

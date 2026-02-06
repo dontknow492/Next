@@ -88,7 +88,8 @@ fun LeftNavigationBar(
         // --- Bottom Area ---
         DownloadSidebarItem(
             downloadState = uiState.downloadState,
-            activeModelName = uiState.selectedModelId
+            activeModelName = uiState.selectedModelId,
+            onCancel = taggerViewModel::cancelDownload
         )
 
 //        Column(

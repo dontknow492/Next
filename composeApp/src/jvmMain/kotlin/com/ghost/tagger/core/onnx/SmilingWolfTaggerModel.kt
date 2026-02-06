@@ -22,6 +22,7 @@ import com.ghost.tagger.data.models.ImageTag
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.merge
 import java.io.File
 import java.nio.file.Path
 import java.util.Locale.getDefault
@@ -62,38 +63,62 @@ class SmilingWolfTaggerModel(
     }
 
     override fun isDownloading(): Boolean {
-        return HuggingFaceDownloader.isDownloading(repoId, modelName) || HuggingFaceDownloader.isDownloading(repoId, tagsName)
+        return HuggingFaceDownloader.isDownloading(repoId, modelName) || HuggingFaceDownloader.isDownloading(
+            repoId,
+            tagsName
+        )
     }
 
     override suspend fun getModelFileValidationResult(apiKey: String?): FileValidationResult {
-
-        val result = HuggingFaceDownloader.checkModelStatus(
+        // 1. Check the .onnx model file
+        val modelResult = HuggingFaceDownloader.checkModelStatus(
             repoId = repoId,
             fileName = modelName,
             localFile = modelFile,
             apiKey = apiKey
         )
-        return result
+
+        // 2. Check the .csv tags file
+        val tagResult = getTagFileValidationResult(apiKey)
+
+        // 3. Merge logic: Priority-based evaluation
+        return when {
+            // If either has an error, return Error
+            modelResult is FileValidationResult.Error -> modelResult
+            tagResult is FileValidationResult.Error -> tagResult
+
+            // If either is corrupted, return Corrupted
+            modelResult is FileValidationResult.Corrupted -> modelResult
+            tagResult is FileValidationResult.Corrupted -> tagResult
+
+            // If either is missing, return NotDownloaded
+            modelResult is FileValidationResult.NotDownloaded -> FileValidationResult.NotDownloaded
+            tagResult is FileValidationResult.NotDownloaded -> FileValidationResult.NotDownloaded
+
+            // Only if both are Valid, return Valid
+            else -> FileValidationResult.Valid
+        }
     }
 
 
-    override fun download(apiKey: String?): Flow<DownloadState> = flow {
-        emitAll(
-            validateAndDownload(
-                repoId = repoId,
-                fileName = modelName,
-                destination = modelFile,
-                apiKey = apiKey
-            )
+    override fun download(apiKey: String?): Flow<DownloadState> {
+        val modelDownload = validateAndDownload(
+            repoId = repoId,
+            fileName = modelName,
+            destination = modelFile,
+            apiKey = apiKey
         )
-        emitAll(
-            validateAndDownload(
-                repoId = repoId,
-                fileName = tagsName,
-                destination = tagsFile,
-                apiKey = apiKey
-            )
+
+        val tagsDownload = validateAndDownload(
+            repoId = repoId,
+            fileName = tagsName,
+            destination = tagsFile,
+            apiKey = apiKey
         )
+
+        // merge() runs both flows concurrently and emits updates from both
+        return merge(modelDownload, tagsDownload)
+
 
     }
 

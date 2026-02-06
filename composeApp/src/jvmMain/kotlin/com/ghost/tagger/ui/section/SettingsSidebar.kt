@@ -289,7 +289,7 @@ fun SingleChoiceSegmentedButton(selected: ModelType, onSelect: (ModelType) -> Un
             .padding(4.dp),
         horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-        ModelType.values().forEach { type ->
+        ModelType.entries.forEach { type ->
             val isSelected = selected == type
             Box(
                 modifier = Modifier

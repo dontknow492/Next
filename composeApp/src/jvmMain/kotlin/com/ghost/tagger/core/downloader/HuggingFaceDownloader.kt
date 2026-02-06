@@ -94,6 +94,12 @@ object HuggingFaceDownloader {
         }
     }
 
+    fun cancelDownloadById(id: String) {
+        activeDownloads.remove(id)?.let { task ->
+            task.job.cancel()
+        }
+    }
+
     /**
      * Checks if any download is active in the downloader.
      */
