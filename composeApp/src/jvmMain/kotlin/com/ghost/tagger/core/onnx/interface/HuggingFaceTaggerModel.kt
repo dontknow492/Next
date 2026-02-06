@@ -12,6 +12,7 @@ interface HuggingFaceTaggerModel {
     val repoUrl: String
     val rootFolder: File
 
+    fun isDownloading(): Boolean
 
     fun download(apiKey: String? = null): Flow<DownloadState>
 

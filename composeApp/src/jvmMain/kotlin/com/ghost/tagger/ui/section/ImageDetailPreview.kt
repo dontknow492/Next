@@ -9,6 +9,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -25,6 +26,7 @@ import com.ghost.tagger.data.models.ImageItem
 import com.ghost.tagger.data.models.ImageTag
 import com.ghost.tagger.ui.actions.DetailAction
 import com.ghost.tagger.ui.components.ImageView
+import com.ghost.tagger.ui.components.MessageBox
 import com.ghost.tagger.ui.components.TagsSection
 import com.ghost.tagger.ui.viewmodels.ImageDetailViewModel
 import org.koin.compose.viewmodel.koinViewModel
@@ -34,11 +36,23 @@ import org.koin.compose.viewmodel.koinViewModel
 fun ImageDetailPreview(
     modifier: Modifier = Modifier,
     onClose: () -> Unit,
+    onError: (String) -> Unit,
 //    actions: (DetailAction) -> Unit
 ) {
     val viewModel: ImageDetailViewModel = koinViewModel()
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+
+
+    LaunchedEffect(uiState.error){
+        if (uiState.error != null) {
+            onError(uiState.error!!)
+        }
+    }
+
+
+
     // Scroll state for the whole panel
     val scrollState = rememberScrollState()
     if (uiState.activeImage != null) {
@@ -77,6 +91,7 @@ fun ImageDetailPreview(
                 Spacer(Modifier.height(8.dp))
                 Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp)) {
                     GenerateAction(
+                        enabled = uiState.error == null,
                         isTagging = uiState.activeImage!!.isTagging,
                         onGenerate = { viewModel.handleAction(DetailAction.GenerateTags) }
                     )
@@ -94,6 +109,16 @@ fun ImageDetailPreview(
                 Spacer(Modifier.height(40.dp)) // Bottom Padding
             }
         }
+    }
+
+    if(uiState.error != null){
+        MessageBox(
+            title = "Error on Image",
+            message = uiState.error!!,
+            onConfirm = viewModel::onClearError,
+            onCancel = viewModel::onClearError,
+            isError = true
+        )
     }
 
 
@@ -212,6 +237,7 @@ private fun DescriptionSection(description: String, onUpdate: (String) -> Unit) 
 @Composable
 private fun GenerateAction(
     modifier: Modifier = Modifier,
+    enabled: Boolean,
     isTagging: Boolean,
     onGenerate: () -> Unit
 ) {

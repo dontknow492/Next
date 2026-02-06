@@ -9,6 +9,10 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Api
 import androidx.compose.material.icons.rounded.ArrowBackIosNew
+import androidx.compose.material.icons.rounded.Settings
+import androidx.compose.material.icons.rounded.SettingsAccessibility
+import androidx.compose.material.icons.rounded.SettingsApplications
+import androidx.compose.material.icons.rounded.SettingsPower
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.NavigationRail
@@ -53,7 +57,7 @@ fun LeftNavigationBar(
             onClick = onSettingClick,
         ) {
             Icon(
-                imageVector = Icons.Rounded.ArrowBackIosNew,
+                imageVector = Icons.Rounded.Settings,
                 contentDescription = "Setting Button",
                 modifier = Modifier.rotate(arrowRotation),
             )
@@ -65,7 +69,6 @@ fun LeftNavigationBar(
             Icon(
                 imageVector = Icons.Rounded.Api,
                 contentDescription = "Hugging face Api Button",
-                modifier = Modifier.rotate(arrowRotation),
             )
         }
 

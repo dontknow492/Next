@@ -22,6 +22,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ghost.tagger.data.models.settings.ModelType
 import com.ghost.tagger.data.models.settings.TaggerSettings
 import com.ghost.tagger.ui.components.ModelSelector
+import com.ghost.tagger.ui.components.PathSelector
 import com.ghost.tagger.ui.components.TagsSection
 import com.ghost.tagger.ui.components.rememberDirectoryPicker
 import com.ghost.tagger.ui.viewmodels.SettingsViewModel
@@ -75,7 +76,7 @@ fun SettingsSidebar() {
                 PathSelector(
                     label = "Model Download Folder",
                     path = settings.modelDownloadPath,
-                    onFolderClick = {},
+                    onFolderClick = viewModel::openModelDownloadFolder,
                     onClick = openDir,
                 )
 
@@ -133,6 +134,7 @@ fun TaggerSettingsSection(viewModel: SettingsViewModel, settings: TaggerSettings
         ModelSelector(
             selectedModelId = uiState.selectedModelId,
             models = uiState.models,
+            downloadState = uiState.downloadState,
             onModelSelected = viewModel::selectModel,
             onDownloadClick = viewModel::downloadModel,
             onOpenFolderClick = viewModel::openInExplorer,
@@ -177,6 +179,21 @@ fun DescriptorSettingsSection(
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(20.dp)) {
         SectionHeader("Generation Settings", Icons.Rounded.AutoAwesome)
+
+        // In work tag
+        OutlinedCard(
+            colors = CardDefaults.outlinedCardColors().copy(contentColor = MaterialTheme.colorScheme.errorContainer)
+        ) {
+            Text(
+                text = "Descriptor is in building phase :)",
+                style = MaterialTheme.typography.bodyLarge,
+//                fontStyle = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.onErrorContainer,
+//                fontSize = MaterialTheme.typography.titleLarge,
+                modifier = Modifier.padding(16.dp),
+
+            )
+        }
 
 //        PathSelector(
 //            label = "Model File (.onnx)",
@@ -344,39 +361,7 @@ fun SwitchSetting(label: String, checked: Boolean, onCheckedChange: (Boolean) ->
     }
 }
 
-@Composable
-fun PathSelector(
-    label: String,
-    path: File,
-    onClick: () -> Unit,
-    onFolderClick: () -> Unit
-) {
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Text(label, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Surface(
-            shape = RoundedCornerShape(8.dp),
-            color = MaterialTheme.colorScheme.surfaceContainerHigh,
-            onClick = { onClick() }
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 0.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = path.invariantSeparatorsPath.ifEmpty { "Select .onnx file..." },
-                    style = MaterialTheme.typography.bodySmall,
-                    color = if (path.name.isEmpty()) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.weight(1f),
-                    maxLines = 1
-                )
-                IconButton(onClick = onFolderClick, modifier = Modifier) {
-                    Icon(Icons.Rounded.FolderOpen, null, modifier = Modifier.size(16.dp).padding(0.dp))
-                }
 
-            }
-        }
-    }
-}
 
 @Composable
 fun StepperSetting(label: String, value: Int, range: IntRange, onValueChange: (Int) -> Unit) {

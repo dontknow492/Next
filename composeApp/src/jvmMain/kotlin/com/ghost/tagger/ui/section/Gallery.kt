@@ -108,7 +108,10 @@ fun GallerySection(
                 currentSettings = uiState.advanceDirSettings,
                 refreshing = uiState.isLoading,
                 onRefresh = viewModel::refresh,
-                onUpdateSettings = viewModel::updateAdvanceFolderSettings
+                onUpdateSettings = viewModel::updateAdvanceFolderSettings,
+                onFolderClick = {
+                    viewModel.openInExplorer(uiState.currentDirectory)
+                }
             )
         }
         DragDropFileBox(
@@ -118,6 +121,16 @@ fun GallerySection(
             ImageSection(viewModel = viewModel)
         }
 
+    }
+
+    if(uiState.error != null){
+        MessageBox(
+            title = "Error on Image",
+            message = uiState.error!!,
+            onConfirm = viewModel::onClearError,
+            onCancel = viewModel::onClearError,
+            isError = true
+        )
     }
 }
 

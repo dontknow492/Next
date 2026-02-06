@@ -230,6 +230,7 @@ fun DownloadSidebarItem(
                         DownloadStatusCard(
                             modelName = activeModelName,
                             status = DownloadStatus(
+                                id = activeModelName,
                                 1.0f,
                                 100,
                                 "0.0MB",

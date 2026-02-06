@@ -98,6 +98,7 @@ object KtorDownloadManager {
                         )
                         emit(
                             DownloadStatus(
+                                id = url,
                                 progress = progress,
                                 progressPercent = (progress * 100).toInt(),
                                 speed = formatSpeed(speedBytesPerSec),
@@ -121,6 +122,7 @@ object KtorDownloadManager {
         val finalSize = outputFile.length()
         emit(
             DownloadStatus(
+                id = url,
                 progress = 1.0f,
                 progressPercent = 100,
                 speed = "0 MB/s",

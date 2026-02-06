@@ -182,7 +182,7 @@ class BatchDetailViewModel(
                         ).take(maxTags)
                     }
                 }
-                Logger.d("Tag generated successfully for images: ${finalTagList}")
+                Logger.d("Tag generated successfully for ${finalTagList.size} images")
 
                 updateImages(disk = true) { currentImage, index ->
                     currentImage.copy(

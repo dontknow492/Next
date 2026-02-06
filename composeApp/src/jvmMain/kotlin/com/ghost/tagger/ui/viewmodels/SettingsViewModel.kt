@@ -3,13 +3,17 @@ package com.ghost.tagger.ui.viewmodels
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.ghost.tagger.core.openFileInExplorer
 import com.ghost.tagger.data.enums.ThemeMode
 import com.ghost.tagger.data.models.ImageTag
 import com.ghost.tagger.data.models.settings.AppSettings
 import com.ghost.tagger.data.models.settings.ModelType
 import com.ghost.tagger.data.repository.SettingsRepository
 import com.ghost.tagger.ui.state.SettingsUiState
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.launch
 import java.io.File
 
 class SettingsViewModel(
@@ -176,6 +180,15 @@ class SettingsViewModel(
     fun setThemeMode(mode: ThemeMode) {
         repository.updateSettings {
             it.copy(themeMode = mode)
+        }
+    }
+
+    fun openModelDownloadFolder() {
+        viewModelScope.launch(Dispatchers.IO) {
+            val path = uiState.value.settings.modelDownloadPath
+            if (path.exists()) {
+                openFileInExplorer(path)
+            }
         }
     }
 }

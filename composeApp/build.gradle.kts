@@ -99,7 +99,7 @@ buildkonfig {
     // This is the "Base" configuration
     defaultConfigs {
         // Notice: No quotes around Type.STRING
-        buildConfigField(Type.STRING, "APP_NAME", "AI Image Tagger")
+        buildConfigField(Type.STRING, "APP_NAME", "Next")
         buildConfigField(Type.STRING, "VERSION", "1.0.0")
 
         // If you needed a boolean later, it would be:
@@ -108,15 +108,29 @@ buildkonfig {
 }
 
 compose.desktop {
-
-
     application {
-        mainClass = "com.ghost.demo.MainKt"
+        mainClass = "com.ghost.tagger.MainKt" // Ensure this matches your package structure!
 
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
-            packageName = "com.ghost.tagger"
+            packageName = "Next"
             packageVersion = "1.0.0"
+
+            windows {
+                // Ensure icon.ico is actually at this path
+                iconFile.set(project.file("src/jvmMain/composeResources/drawable/icon.ico"))
+                menu = true
+                shortcut = true
+            }
+
+            // This "flattens" the drawable folder into the app's resource directory
+            appResourcesRootDir.set(project.file("src/jvmMain/composeResources/drawable"))
         }
+
+        jvmArgs(
+            // Try this path first. If it fails, check the 'app' subfolder in the build directory.
+            "-splash:${"$"}{APPDIR}/splash.png",
+
+        )
     }
 }

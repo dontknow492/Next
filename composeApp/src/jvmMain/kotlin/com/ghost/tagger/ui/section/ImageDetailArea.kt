@@ -16,6 +16,7 @@ fun ImageDetailArea(
     isPanelVisible: Boolean,
     onClearSelection: () -> Unit,
     onCloseImagePreview: () -> Unit,
+    onError: (String) -> Unit,
 ) {
 
     AnimatedVisibility(
@@ -32,12 +33,14 @@ fun ImageDetailArea(
         when (isBatch) {
             true -> BatchDetailPanel(
                 onClose = onClearSelection,
-                modifier = modifier.width(width)
+                modifier = modifier.width(width),
+                onError = onError
             )
 
             false -> ImageDetailPreview(
                 modifier = modifier.width(width),
-                onClose = onCloseImagePreview
+                onClose = onCloseImagePreview,
+                onError = onError
             )
         }
     }

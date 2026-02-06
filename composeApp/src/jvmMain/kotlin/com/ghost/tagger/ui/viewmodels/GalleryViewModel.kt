@@ -13,9 +13,11 @@ import com.ghost.tagger.data.repository.GalleryRepository
 import com.ghost.tagger.data.repository.ImageRepository
 import com.ghost.tagger.data.repository.SettingsRepository
 import com.ghost.tagger.ui.state.GalleryUiState
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import kotlinx.io.IOException
 import java.io.File
 
 class GalleryViewModelV1(
@@ -457,7 +459,14 @@ class GalleryViewModel(
         val dir = uiState.value.currentDirectory ?: return
         val maxDepth = settingsRepo.settings.value.session.maxRecursionDepth
         // Delegate smart refresh to the repository
-        imageRepository.refresh(dir, maxDepth)
+        try{
+            imageRepository.refresh(dir, maxDepth)
+        }catch (error: IOException){
+            onError(error)
+        }catch (error: Exception){
+            onError(error)
+        }
+
     }
 
     private fun loadImages(directory: File) {
@@ -467,7 +476,14 @@ class GalleryViewModel(
         _uiState.update { it.copy(isLoading = true, images = emptyList(), statusMessage = "Scanning...") }
 
         // Repository handles the background threading and state updates
-        imageRepository.loadImagesFromDirectory(directory, isRecursive, maxDepth)
+        try{
+            imageRepository.loadImagesFromDirectory(directory, isRecursive, maxDepth)
+        }catch (error: IOException){
+            onError(error)
+        }catch (error: Exception) {
+            onError(error)
+        }
+
     }
 
     // ==========================================================
@@ -631,10 +647,16 @@ class GalleryViewModel(
         Logger.d(tag = "GalleryViewModel", messageString = "Visual move $from to $to")
     }
 
-    fun openInExplorer(path: File) {
-        viewModelScope.launch {
-            openFileInExplorer(path)
+    fun openInExplorer(path: File?) {
+        if (path == null) return
+        try {
+            viewModelScope.launch(Dispatchers.IO) {
+                openFileInExplorer(path)
+            }
+        } catch (e: Exception) {
+            onError(e)
         }
+
     }
 
     fun removeImage(id: String) {
@@ -697,4 +719,13 @@ class GalleryViewModel(
     fun getSelectedImages(): List<ImageItem> {
         return _uiState.value.images.filter { it.id in _uiState.value.selectedIds }
     }
+
+    fun onError(error: Exception) {
+        _uiState.update { it.copy(error = error.message) }
+    }
+
+    fun onClearError() {
+        _uiState.update { it.copy(error = null) }
+    }
+
 }

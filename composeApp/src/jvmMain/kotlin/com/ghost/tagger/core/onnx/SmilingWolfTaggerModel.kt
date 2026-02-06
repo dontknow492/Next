@@ -61,6 +61,10 @@ class SmilingWolfTaggerModel(
         )
     }
 
+    override fun isDownloading(): Boolean {
+        return HuggingFaceDownloader.isDownloading(repoId, modelName) || HuggingFaceDownloader.isDownloading(repoId, tagsName)
+    }
+
     override suspend fun getModelFileValidationResult(apiKey: String?): FileValidationResult {
 
         val result = HuggingFaceDownloader.checkModelStatus(
@@ -138,7 +142,8 @@ class SmilingWolfTaggerModel(
 
 
     override fun cancelDownload() {
-        HuggingFaceDownloader.cancelCurrentDownload()
+        HuggingFaceDownloader.cancelDownload(repoId, modelName)
+        HuggingFaceDownloader.cancelDownload(repoId, tagsName)
     }
 
     @Synchronized

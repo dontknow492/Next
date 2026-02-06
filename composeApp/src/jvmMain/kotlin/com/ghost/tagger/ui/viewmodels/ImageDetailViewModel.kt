@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import co.touchlab.kermit.Logger
 import com.ghost.tagger.core.ModelManager
+import com.ghost.tagger.core.openFileInExplorer
 import com.ghost.tagger.data.models.ImageItem
 import com.ghost.tagger.data.models.ImageTag
 import com.ghost.tagger.data.repository.ImageRepository
@@ -256,7 +257,7 @@ class ImageDetailViewModel(
                         .take(maxTags)
                 }
 
-                Logger.d("Tag generated successfully: $finalTagList")
+                Logger.d("Tag generated successfully: ${finalTagList.size}")
 
                 // 5. Save & Update State (Back on Main Thread)
                 saveChanges(
@@ -290,10 +291,10 @@ class ImageDetailViewModel(
     private fun openInExplorer(path: File) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
-
-                if (path.exists() && Desktop.isDesktopSupported()) {
-                    Desktop.getDesktop().browseFileDirectory(path)
-                }
+                openFileInExplorer(path)
+//                if (path.exists() && Desktop.isDesktopSupported()) {
+//                    Desktop.getDesktop().browseFileDirectory(path)
+//                }
             } catch (e: Exception) {
                 Logger.e("Error opening in explorer: ${e.message}")
                 onError(e)

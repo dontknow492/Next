@@ -136,10 +136,16 @@ object ModelManager {
         return default
     }
 
-    fun openInExplorer(modelId: String) {
+    suspend fun openInExplorer(modelId: String) {
         val file = getFilePath(modelId)
+        withContext(Dispatchers.IO){
+            try{
+                openFileInExplorer(file)
+            } catch (e: Exception){
+                Logger.e("File $file could not be opened: ${e.message}", e)
+            }
+        }
 
-        openFileInExplorer(file)
     }
 
     // ✅ Fixed: Uses the actual model instance to determine path

@@ -7,10 +7,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.CloudDownload
-import androidx.compose.material.icons.filled.Download
-import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.FolderOpen
 import androidx.compose.material.icons.outlined.Language
 import androidx.compose.material.icons.outlined.SmartToy
@@ -23,6 +20,7 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.ghost.tagger.core.downloader.DownloadState
 import com.ghost.tagger.core.downloader.FileValidationResult
 import com.ghost.tagger.core.onnx.`interface`.HuggingFaceTaggerModel
 import java.awt.Desktop
@@ -32,6 +30,7 @@ import java.net.URI
 fun ModelSelector(
     selectedModelId: String,
     models: List<HuggingFaceTaggerModel>,
+    downloadState: DownloadState,
     onModelSelected: (HuggingFaceTaggerModel) -> Unit,
     onDownloadClick: (HuggingFaceTaggerModel) -> Unit,
     onOpenFolderClick: (HuggingFaceTaggerModel) -> Unit
@@ -133,6 +132,9 @@ fun ModelSelector(
                     ModelOptionItemM3(
                         model = model,
                         isSelected = model.repoId == selectedModelId,
+                        downloadState = downloadState,
+                        enableDownload = downloadState !is DownloadState.Downloading,
+                        onCancel = { model.cancelDownload() },
                         onSelect = {
                             onModelSelected(model)
                             expanded = false
@@ -176,13 +178,18 @@ fun ModelSelector(
 @Composable
 private fun ModelOptionItemM3(
     model: HuggingFaceTaggerModel,
+    downloadState: DownloadState,
     isSelected: Boolean,
+    enableDownload: Boolean = true,
     onSelect: () -> Unit,
+    onCancel: () -> Unit,
     onDownload: () -> Unit,
     onOpenFolder: () -> Unit
 ) {
 
     var validationResult by remember { mutableStateOf<FileValidationResult?>(null) }
+
+
 
     LaunchedEffect(model) {
         // This runs in a coroutine, so we can call the suspend function
@@ -301,20 +308,84 @@ private fun ModelOptionItemM3(
                     )
                 }
             } else {
+                DownloadButton(
+                    isDownloading = model.isDownloading(),
+                    enabled = enableDownload,
+                    downloadState = downloadState,
+                    onDownload = onDownload,
+                    onCancel = onCancel,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun DownloadButton(
+    isDownloading: Boolean,
+    enabled: Boolean = true,
+    downloadState: DownloadState,
+    onDownload: () -> Unit,
+    onCancel: () -> Unit,
+) {
+    when (isDownloading && downloadState is DownloadState.Downloading) {
+        true -> {
+            // Show progress indicator or "Downloading..." text
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier.size(36.dp)
+                ) {
+                    CircularProgressIndicator(
+                        progress = { downloadState.status.progress },
+                        modifier = Modifier.size(36.dp),
+                        color = MaterialTheme.colorScheme.primary,
+                        strokeWidth = 4.dp,
+                        trackColor = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        text = "${(downloadState.status.progress * 100).toInt()}%",
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.align(Alignment.Center)
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(8.dp))
                 FilledIconButton(
-                    onClick = onDownload,
+                    onClick = onCancel,
                     modifier = Modifier.size(36.dp),
                     colors = IconButtonDefaults.filledIconButtonColors(
-                        containerColor = MaterialTheme.colorScheme.primary
+                        containerColor = MaterialTheme.colorScheme.errorContainer
                     )
                 ) {
                     Icon(
-                        imageVector = Icons.Default.Download,
+                        imageVector = Icons.Default.Cancel,
                         contentDescription = "Download",
                         modifier = Modifier.size(20.dp)
                     )
                 }
             }
         }
+
+        false -> {
+            FilledIconButton(
+                onClick = onDownload,
+                modifier = Modifier.size(36.dp),
+                enabled = enabled,
+                colors = IconButtonDefaults.filledIconButtonColors(
+                    containerColor = MaterialTheme.colorScheme.primary
+                )
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Download,
+                    contentDescription = "Download",
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+        }
     }
+
 }

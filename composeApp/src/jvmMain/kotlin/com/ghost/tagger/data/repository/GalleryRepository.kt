@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import java.io.File
+import kotlinx.io.IOException
 
 /**
  * Result object for a refresh operation.
@@ -31,41 +32,51 @@ class GalleryRepository {
     val CHUNK_SIZE = 50
 
     fun getImages(root: File, recursive: Boolean, maxRecursionDepth: Int): Flow<List<ImageItem>> = flow {
-        if (!root.exists() || !root.isDirectory) return@flow
-
-        val buffer = mutableListOf<ImageItem>()
-
-        // Recursive walker
-        root.walkTopDown()
-            .maxDepth(if (recursive) maxRecursionDepth else 1) // Guardrail against deep system folders
-            .filter { it.isFile && MetadataReader.isSupported(it) }
-            .forEach { file ->
-
-                // Read metadata (Disk I/O)
-                val meta = MetadataReader.read(file)
-
-                val item = ImageItem(
-                    id = file.path, // Unique ID for Selection
-                    name = file.name,
-                    metadata = meta,
-                )
-
-                buffer.add(item)
-
-                // If buffer is full, emit a copy and continue
-                if (buffer.size >= CHUNK_SIZE) {
-                    emit(buffer.toList())
-                    buffer.clear()
-                }
+        try {
+            if (!root.exists()) {
+                throw IOException("Directory does not exist: ${root.absolutePath}")
+            }
+            if (!root.isDirectory) {
+                throw IOException("Path is not a directory: ${root.absolutePath}")
             }
 
-        // Emit remaining items
-        if (buffer.isNotEmpty()) {
-            emit(buffer.toList())
-            buffer.clear() // Good practice to clear even at the end
-        }
-    }.flowOn(Dispatchers.IO) // Run everything on the Background Thread
+            val buffer = mutableListOf<ImageItem>()
 
+            root.walkTopDown()
+                .maxDepth(if (recursive) maxRecursionDepth else 1)
+                .onEnter { directory ->
+                    // Optional: Check permissions per folder if needed
+                    directory.canRead()
+                }
+                .filter { it.isFile && MetadataReader.isSupported(it) }
+                .forEach { file ->
+                    val meta = MetadataReader.read(file)
+                    val item = ImageItem(
+                        id = file.path,
+                        name = file.name,
+                        metadata = meta,
+                    )
+
+                    buffer.add(item)
+
+                    if (buffer.size >= CHUNK_SIZE) {
+                        emit(buffer.toList())
+                        buffer.clear()
+                    }
+                }
+
+            if (buffer.isNotEmpty()) {
+                emit(buffer.toList())
+                buffer.clear()
+            }
+        } catch (e: SecurityException) {
+            Logger.e(e) { "Permission denied while scanning: ${root.path}" }
+            throw e // Re-throw so ViewModel can catch it
+        } catch (e: Exception) {
+            Logger.e(e) { "Error scanning directory: ${root.path}" }
+            throw e // Re-throw
+        }
+    }.flowOn(Dispatchers.IO)
     /**
      * Smart Refresh:
      * 1. Walks the directory.
@@ -78,65 +89,60 @@ class GalleryRepository {
         currentImages: List<ImageItem>,
         maxRecursionDepth: Int = 1
     ): Flow<ScanDiff> = flow {
-        if (!root.exists() || !root.isDirectory) return@flow
-
-        // 1. Create a quick lookup set for existing paths
-        val currentMap = currentImages.associateBy { it.id }
-        val foundPaths = mutableSetOf<String>()
-
-        val addedBuffer = mutableListOf<ImageItem>()
-        val updatedBuffer = mutableListOf<ImageItem>()
-
-
-        // 2. Walk and Find New Files
-        root.walkTopDown()
-            .maxDepth(maxRecursionDepth)
-            .filter { it.isFile && MetadataReader.isSupported(it) }
-            .forEach { file ->
-                val path = file.path
-                foundPaths.add(path) // Mark as found
-
-                val existingItem = currentMap[path]
-                val lastModified = file.lastModified()
-
-                // Logic: Is it new OR has it been modified since we last saw it?
-                val isNew = existingItem == null
-                val isModified = existingItem != null && existingItem.metadata.lastModified != lastModified
-
-                // Only read metadata if we DON'T have it already
-                if (isNew || isModified) {
-                    val meta = MetadataReader.read(file)
-                    val newItem = ImageItem(
-                        id = path,
-                        name = file.name,
-                        metadata = meta.copy(lastModified = lastModified),
-                    )
-
-                    if (isNew) addedBuffer.add(newItem) else updatedBuffer.add(newItem)
-
-                    if (addedBuffer.size + updatedBuffer.size >= CHUNK_SIZE) {
-                        emit(ScanDiff(added = addedBuffer.toList(), updated = updatedBuffer.toList()))
-                        addedBuffer.clear()
-                        updatedBuffer.clear()
-                    }
-                }
+        try {
+            if (!root.exists() || !root.isDirectory) {
+                throw IOException("Target directory is invalid or missing.")
             }
 
-        // Emit remaining added files
-        // Final sweep
-        if (addedBuffer.isNotEmpty() || updatedBuffer.isNotEmpty()) {
-            emit(ScanDiff(added = addedBuffer.toList(), updated = updatedBuffer.toList()))
+            val currentMap = currentImages.associateBy { it.id }
+            val foundPaths = mutableSetOf<String>()
+            val addedBuffer = mutableListOf<ImageItem>()
+            val updatedBuffer = mutableListOf<ImageItem>()
+
+            root.walkTopDown()
+                .maxDepth(maxRecursionDepth)
+                .filter { it.isFile && MetadataReader.isSupported(it) }
+                .forEach { file ->
+                    val path = file.path
+                    foundPaths.add(path)
+
+                    val existingItem = currentMap[path]
+                    val lastModified = file.lastModified()
+
+                    val isNew = existingItem == null
+                    val isModified = existingItem != null && existingItem.metadata.lastModified != lastModified
+
+                    if (isNew || isModified) {
+                        val meta = MetadataReader.read(file)
+                        val newItem = ImageItem(
+                            id = path,
+                            name = file.name,
+                            metadata = meta.copy(lastModified = lastModified),
+                        )
+
+                        if (isNew) addedBuffer.add(newItem) else updatedBuffer.add(newItem)
+
+                        if (addedBuffer.size + updatedBuffer.size >= CHUNK_SIZE) {
+                            emit(ScanDiff(added = addedBuffer.toList(), updated = updatedBuffer.toList()))
+                            addedBuffer.clear()
+                            updatedBuffer.clear()
+                        }
+                    }
+                }
+
+            if (addedBuffer.isNotEmpty() || updatedBuffer.isNotEmpty()) {
+                emit(ScanDiff(added = addedBuffer.toList(), updated = updatedBuffer.toList()))
+            }
+
+            val removed = currentMap.keys - foundPaths
+            if (removed.isNotEmpty()) {
+                emit(ScanDiff(removedIds = removed))
+            }
+
+            Logger.i("Refreshed Successfully")
+        } catch (e: Exception) {
+            Logger.e(e) { "Failed to refresh directory" }
+            throw e
         }
-
-        // 3. Calculate Removed Files (Existing - Found)
-        // We can only know this after the walk completes
-        // 3. Removed Files
-        val removed = currentMap.keys - foundPaths
-        if (removed.isNotEmpty()) {
-            emit(ScanDiff(removedIds = removed))
-        }
-
-        Logger.i("Refreshed Successfully: Added: ${addedBuffer.size}, Updated: ${updatedBuffer.size}, Removed: ${removed.size}")
-
     }.flowOn(Dispatchers.IO)
 }

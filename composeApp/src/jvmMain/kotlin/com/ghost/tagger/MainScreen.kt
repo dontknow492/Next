@@ -9,6 +9,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import co.touchlab.kermit.Logger
 import com.ghost.tagger.core.ModelManager
 import com.ghost.tagger.ui.components.ApiKeyDialog
 import com.ghost.tagger.ui.components.VerticalDraggableSplitter
@@ -110,7 +111,10 @@ fun MainScreen(
                         isBatch = galleryUiState.selectedIds.isNotEmpty(),
                         onClearSelection = galleryViewModel::clearSelection,
                         onCloseImagePreview = { isPanelVisible = false },
-                        isPanelVisible = isPanelVisible
+                        isPanelVisible = isPanelVisible,
+                        onError = {
+                            Logger.e(it)
+                        }
                     )
 
                 }

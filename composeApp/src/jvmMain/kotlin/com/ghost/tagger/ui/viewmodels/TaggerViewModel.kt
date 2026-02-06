@@ -77,7 +77,7 @@ class TaggerViewModel(
             _uiState.update {
                 it.copy(
                     downloadState = DownloadState.Downloading(
-                        DownloadStatus(0.5f, 0, "0 B/s", "--", "0 MB / ...", null, 0)
+                        DownloadStatus("nothing", 0.5f, 0, "0 B/s", "--", "0 MB / ...", null, 0)
                     ), error = null
                 )
             }

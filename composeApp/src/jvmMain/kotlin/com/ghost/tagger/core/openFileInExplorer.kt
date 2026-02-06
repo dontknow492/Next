@@ -20,5 +20,6 @@ fun openFileInExplorer(file: File) {
         Logger.d(tag = "GalleryViewModel: OpenInExplorer", messageString = "Opening ${file.path}")
     } catch (e: Exception) {
         Logger.e(e) { "Error opening in explorer: ${e.stackTraceToString()}" }
+        throw e
     }
 }

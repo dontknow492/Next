@@ -21,7 +21,8 @@ data class GalleryUiState(
     val searchQuery: String = "",
     val isSelectionVisible: Boolean = false,
     val taggingId: String? = null,
-    val advanceDirSettings: DirectorySettings = DirectorySettings()
+    val advanceDirSettings: DirectorySettings = DirectorySettings(),
+    val error: String? = null
 )
 
 

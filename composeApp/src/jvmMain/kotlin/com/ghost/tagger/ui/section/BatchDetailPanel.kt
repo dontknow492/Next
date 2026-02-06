@@ -31,6 +31,7 @@ import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import coil3.request.crossfade
 import com.ghost.tagger.data.models.ImageItem
+import com.ghost.tagger.ui.components.MessageBox
 import com.ghost.tagger.ui.viewmodels.BatchDetailViewModel
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -40,11 +41,19 @@ import org.koin.compose.viewmodel.koinViewModel
 @Composable
 fun BatchDetailPanel(
     onClose: () -> Unit,
+    onError: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val viewModel: BatchDetailViewModel = koinViewModel()
 
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+
+
+    LaunchedEffect(state.error) {
+        if (state.error != null) {
+            onError(state.error!!)
+        }
+    }
 
 
     // Derived colors for consistency
@@ -104,7 +113,7 @@ fun BatchDetailPanel(
             )
         }
 
-        Divider(color = MaterialTheme.colorScheme.outlineVariant)
+        HorizontalDivider(Modifier, DividerDefaults.Thickness, color = MaterialTheme.colorScheme.outlineVariant)
 
         // 4. Batch Actions (AI)
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -117,7 +126,7 @@ fun BatchDetailPanel(
             Button(
                 onClick = viewModel::generateTagsForBatch,
                 modifier = Modifier.fillMaxWidth(),
-                enabled = !state.isGenerating,
+                enabled = !state.isGenerating && state.error == null && state.count > 0,
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
                     contentColor = MaterialTheme.colorScheme.onPrimaryContainer
@@ -273,6 +282,16 @@ fun BatchDetailPanel(
         }
 
         Spacer(Modifier.height(32.dp)) // Bottom padding
+
+        if (state.error != null) {
+            MessageBox(
+                title = "Error on Batch",
+                message = state.error!!,
+                onConfirm = viewModel::onClearError,
+                onCancel = viewModel::onClearError,
+                isError = true
+            )
+        }
     }
 }
 

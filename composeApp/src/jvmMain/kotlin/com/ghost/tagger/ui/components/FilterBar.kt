@@ -3,6 +3,7 @@ package com.ghost.tagger.ui.components
 import androidx.compose.animation.*
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -84,6 +85,7 @@ fun DirectorySection(
     onClear: () -> Unit,
     onRefresh: () -> Unit,
     refreshing: Boolean = false,
+    onFolderClick: () -> Unit,
     onLoadDirectory: (File) -> Unit,
     onUpdateSettings: (DirectorySettings) -> Unit
 ) {
@@ -107,7 +109,8 @@ fun DirectorySection(
             currentDir = currentDir,
             settings = currentSettings,
             onDismiss = { isSettingsDialogOpened = false },
-            onApply = onUpdateSettings
+            onApply = onUpdateSettings,
+            onFolderClick = onFolderClick,
         )
     }
 
@@ -169,6 +172,7 @@ fun DirectorySettingsDialog(
     currentDir: File?,
     settings: DirectorySettings,
     onDismiss: () -> Unit,
+    onFolderClick: () -> Unit,
     onApply: (DirectorySettings) -> Unit
 ) {
     var tempSettings by remember { mutableStateOf(settings) }
@@ -226,15 +230,21 @@ fun DirectorySettingsDialog(
                             color = MaterialTheme.colorScheme.surfaceContainerHighest,
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            SelectionContainer {
-                                Text(
-                                    text = currentDir.path,
-                                    modifier = Modifier.padding(12.dp),
-                                    style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
-                                    maxLines = 2,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
+                            PathSelector(
+                                label = null,
+                                path = currentDir,
+                                onClick = onFolderClick,
+                                onFolderClick = onFolderClick,
+                            )
+//                            SelectionContainer {
+//                                Text(
+//                                    text = currentDir.path,
+//                                    modifier = Modifier.padding(12.dp),
+//                                    style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
+//                                    maxLines = 2,
+//                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+//                                )
+//                            }
 
                         }
                     }
