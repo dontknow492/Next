@@ -6,6 +6,31 @@ A powerful desktop application built with Kotlin Multiplatform and Jetpack Compo
 ![Kotlin](https://img.shields.io/badge/Kotlin-2.3.0-purple)
 ![Platform](https://img.shields.io/badge/platform-Desktop%20(JVM)-orange)
 
+---
+## 🖼️ Screenshots
+
+### Home Screen
+**Light Mode**
+![Home Light](images/home_light.png)
+
+**Dark Mode**
+![Home Dark](images/home_dark.png)
+
+---
+### Batch Image Selection
+Select multiple images for bulk tagging and operations.
+
+![Batch Image Selection](images/home_batch_light.png)
+
+---
+
+### Model Selection Panel
+Choose and manage AI tagging models from Hugging Face.
+
+![Model Selection](images/home_models_panel.png)
+
+---
+
 ## ✨ Features
 
 ### Core Functionality

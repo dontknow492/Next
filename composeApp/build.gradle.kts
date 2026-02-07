@@ -114,7 +114,7 @@ compose.desktop {
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
             packageName = "Next"
-            packageVersion = "1.0.0"
+            packageVersion = "1.0.1"
 
             windows {
                 // Ensure icon.ico is actually at this path
@@ -125,9 +125,6 @@ compose.desktop {
                 menuGroup = "Next"
                 // **Unique identifier for upgrade/uninstall tracking**
                 upgradeUuid = "12345678-1234-5678-1234-567812345678"
-
-                // **Optional: Customize uninstaller behavior**
-
 
             }
 
