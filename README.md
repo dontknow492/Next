@@ -229,81 +229,12 @@ Next/
             └── kotlin/
                 └── com/ghost/tagger/
                     ├── main.kt                      # Application entry point
-                    ├── ImageTagger.kt               # Core tagging logic
                     ├── MainScreen.kt                # Main UI screen
-                    ├── TaggerService.kt             # Tagging service
-                    │
-                    ├── core/                        # Core functionality
-                    │   ├── ModelManager.kt          # AI model management
-                    │   ├── MetadataReader.kt        # Read image metadata
-                    │   ├── MetadataWriter.kt        # Write image metadata
-                    │   ├── downloader/              # Model download logic
-                    │   │   ├── HuggingFaceDownloader.kt
-                    │   │   ├── KtorDownloadManager.kt
-                    │   │   └── DownloadState.kt
-                    │   └── onnx/                    # ONNX model interfaces
-                    │       ├── interface/
-                    │       │   └── HuggingFaceTaggerModel.kt
-                    │       └── SmilingWolfTaggerModel.kt
-                    │
-                    ├── data/                        # Data layer
-                    │   ├── models/                  # Data models
-                    │   │   ├── ImageItem.kt
-                    │   │   ├── ImageTag.kt
-                    │   │   ├── ImageMetadata.kt
-                    │   │   ├── DownloadStatus.kt
-                    │   │   └── settings/
-                    │   │       ├── AppSettings.kt
-                    │   │       ├── DirectorySettings.kt
-                    │   │       └── SettingsManager.kt
-                    │   ├── repository/              # Data repositories
-                    │   │   ├── GalleryRepository.kt
-                    │   │   └── SettingsRepository.kt
-                    │   ├── viewmodels/              # ViewModels (MVVM)
-                    │   │   ├── GalleryViewModel.kt
-                    │   │   ├── SettingsViewModel.kt
-                    │   │   ├── TaggerViewModel.kt
-                    │   │   ├── MainViewModel.kt
-                    │   │   └── ApiKeyViewModel.kt
-                    │   ├── enums/                   # Enumerations
-                    │   │   ├── GalleryMode.kt
-                    │   │   ├── SortBy.kt
-                    │   │   └── SortOrder.kt
-                    │   └── actions/                 # Action definitions
-                    │       └── GalleryActions.kt
-                    │
+                    ├── core/  
+                    ├── data/    
                     ├── di/                          # Dependency Injection
-                    │   └── AppModule.kt             # Koin module configuration
-                    │
                     └── ui/                          # UI layer
-                        ├── theme/                   # Theming
-                        │   ├── Theme.kt
-                        │   └── Color.kt
-                        ├── components/              # Reusable UI components
-                        │   ├── ImageCard.kt
-                        │   ├── ImageView.kt
-                        │   ├── ImageDetailPreview.kt
-                        │   ├── ModelSelector.kt
-                        │   ├── DownloadCard.kt
-                        │   ├── MessageBox.kt
-                        │   ├── SortMenu.kt
-                        │   ├── SearchBar.kt
-                        │   ├── FilterBar.kt
-                        │   ├── EmptyGalleryState.kt
-                        │   ├── OpenDirectoryPanel.kt
-                        │   ├── SelectionOverlay.kt
-                        │   ├── DashedBox.kt
-                        │   ├── DragDropFileBox.kt
-                        │   ├── ApiKeyDialog.kt
-                        │   └── Splitter.kt
-                        ├── section/                 # Major UI sections
-                        │   ├── Gallery.kt           # Image gallery view
-                        │   ├── LeftNavigationBar.kt # Navigation sidebar
-                        │   └── SettingsSidebar.kt   # Settings panel
-                        └── state/                   # UI state definitions
-                            ├── GalleryUiState.kt
-                            ├── SettingsUiState.kt
-                            └── TaggerUiState.kt
+                        
 ```
 
 ## ⚙️ Configuration
